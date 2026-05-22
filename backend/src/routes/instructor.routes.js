@@ -11,12 +11,9 @@ import { authenticateJwt } from "../middleware/authentication.middleware.js";
 import { populateUser } from "../middleware/authorization.middleware.js";
 
 const router = Router();
-
-// Middleware de autenticación
 router.use(authenticateJwt);
 router.use(populateUser);
 
-// Solo administradores pueden crear instructores
 router.post("/", async (req, res, next) => {
   try {
     if (req.user.role !== "administrador") {
@@ -48,7 +45,6 @@ router.put("/:id", async (req, res, next) => {
   }
 }, updateInstructor);
 
-// Solo administradores pueden eliminar instructores
 router.delete("/:id", async (req, res, next) => {
   try {
     if (req.user.role !== "administrador") {

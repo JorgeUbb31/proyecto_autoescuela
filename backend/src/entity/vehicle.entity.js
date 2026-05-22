@@ -71,6 +71,17 @@ export const VehicleEntity = new EntitySchema({
         instructores: {
             target: "Instructor",
             type: "many-to-many",
+            joinTable: {
+                name: "instructor_vehiculos", // Mismo nombre que en InstructorEntity
+                joinColumn: {
+                    name: "vehiculoId",
+                    referencedColumnName: "id",
+                },
+                inverseJoinColumn: {
+                    name: "instructorId",
+                    referencedColumnName: "id",
+                },
+            },
             inverseSide: "vehiculos",
         },
     },

@@ -11,7 +11,6 @@ export async function createVehicle(req, res) {
     const { error } = createVehicleValidation.validate(req.body);
     if (error) return res.status(400).json({ message: error.details[0].message });
 
-    // Verificar si el vehículo ya existe por matrícula
     const existingVehicle = await vehicleRepository.findOne({
       where: { matricula: req.body.matricula },
     });
@@ -20,7 +19,6 @@ export async function createVehicle(req, res) {
         .status(409)
         .json({ message: "Un vehículo con esta matrícula ya existe." });
 
-    // Crear el vehículo
     const newVehicle = vehicleRepository.create({
       matricula: req.body.matricula,
       marca: req.body.marca,
@@ -56,7 +54,6 @@ export async function getVehicles(req, res) {
       relations: ["instructores"],
     });
 
-    // Si el usuario es secretaria, mostrar solo vehículos disponibles
     if (req.user.role === "secretaria") {
       const availableVehicles = vehicles.filter((v) => v.disponible);
       return res.status(200).json({
@@ -128,7 +125,6 @@ export async function updateVehicle(req, res) {
     if (!vehicle)
       return res.status(404).json({ message: "Vehículo no encontrado." });
 
-    // Verificar unicidad de matrícula si se actualiza
     if (req.body.matricula && req.body.matricula !== vehicle.matricula) {
       const existingVehicle = await vehicleRepository.findOne({
         where: { matricula: req.body.matricula },
@@ -139,7 +135,6 @@ export async function updateVehicle(req, res) {
           .json({ message: "Un vehículo con esta matrícula ya existe." });
     }
 
-    // Actualizar vehículo
     const updatedVehicle = {
       ...vehicle,
       ...req.body,
@@ -195,12 +190,10 @@ export async function assignVehicleToInstructor(req, res) {
     const instructorRepository = AppDataSource.getRepository("Instructor");
     const { vehicleId, instructorId } = req.body;
 
-    // Validar IDs
     if (isNaN(vehicleId) || isNaN(instructorId)) {
       return res.status(400).json({ message: "IDs inválidos" });
     }
 
-    // Obtener vehículo e instructor
     const vehicle = await vehicleRepository.findOne({
       where: { id: vehicleId },
       relations: ["instructores"],
@@ -215,7 +208,6 @@ export async function assignVehicleToInstructor(req, res) {
     if (!instructor)
       return res.status(404).json({ message: "Instructor no encontrado." });
 
-    // Asignar vehículo a instructor
     if (!vehicle.instructores.find((i) => i.id === instructorId)) {
       vehicle.instructores.push(instructor);
       await vehicleRepository.save(vehicle);
@@ -241,12 +233,10 @@ export async function removeVehicleFromInstructor(req, res) {
     const vehicleRepository = AppDataSource.getRepository("Vehiculo");
     const { vehicleId, instructorId } = req.body;
 
-    // Validar IDs
     if (isNaN(vehicleId) || isNaN(instructorId)) {
       return res.status(400).json({ message: "IDs inválidos" });
     }
 
-    // Obtener vehículo
     const vehicle = await vehicleRepository.findOne({
       where: { id: vehicleId },
       relations: ["instructores"],
@@ -255,7 +245,6 @@ export async function removeVehicleFromInstructor(req, res) {
     if (!vehicle)
       return res.status(404).json({ message: "Vehículo no encontrado." });
 
-    // Remover instructor del vehículo
     vehicle.instructores = vehicle.instructores.filter(
       (i) => i.id !== instructorId
     );

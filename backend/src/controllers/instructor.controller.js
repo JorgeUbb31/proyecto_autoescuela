@@ -12,14 +12,12 @@ export async function createInstructor(req, res) {
     const { error } = createInstructorValidation.validate(req.body);
     if (error) return res.status(400).json({ message: error.details[0].message });
 
-    // Verificar que el usuario existe
     const user = await userRepository.findOne({
       where: { id: req.body.userId },
     });
     if (!user)
       return res.status(404).json({ message: "Usuario no encontrado." });
 
-    // Verificar que el usuario tiene el rol correcto
     if (user.role !== "instructor" && user.role !== "profesor") {
       return res
         .status(403)
@@ -28,7 +26,6 @@ export async function createInstructor(req, res) {
         });
     }
 
-    // Verificar si ya existe un instructor para este usuario
     const existingInstructor = await instructorRepository.findOne({
       where: { userId: req.body.userId },
     });
@@ -37,7 +34,6 @@ export async function createInstructor(req, res) {
         .status(409)
         .json({ message: "Este usuario ya es instructor." });
 
-    // Crear el instructor
     const newInstructor = instructorRepository.create({
       userId: req.body.userId,
       rut: req.body.rut,
@@ -71,7 +67,6 @@ export async function getInstructors(req, res) {
       relations: ["usuario", "licencias", "vehiculos"],
     });
 
-    // Si el usuario es secretaria, filtrar datos sensibles
     if (req.user.role === "secretaria") {
       const filteredInstructors = instructors
         .filter((i) => i.activo)
@@ -126,7 +121,6 @@ export async function getInstructorById(req, res) {
     if (!instructor)
       return res.status(404).json({ message: "Instructor no encontrado." });
 
-    // Si el usuario es secretaria, filtrar datos sensibles
     if (req.user.role === "secretaria") {
       const filteredInstructor = {
         id: instructor.id,
@@ -177,7 +171,6 @@ export async function updateInstructor(req, res) {
     if (!instructor)
       return res.status(404).json({ message: "Instructor no encontrado." });
 
-    // Actualizar instructor
     const updatedInstructor = {
       ...instructor,
       ...req.body,

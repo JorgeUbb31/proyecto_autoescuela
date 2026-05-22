@@ -13,14 +13,12 @@ export async function createLicense(req, res) {
     const { error } = createLicenseValidation.validate(req.body);
     if (error) return res.status(400).json({ message: error.details[0].message });
 
-    // Verificar si la licencia ya existe por número
     const existingLicense = await licenseRepository.findOne({
       where: { numeroLicencia: req.body.numeroLicencia },
     });
     if (existingLicense)
       return res.status(409).json({ message: "Esta licencia ya existe." });
 
-    // Verificar que el instructor existe y tiene el rol correcto
     const instructorRepository = AppDataSource.getRepository("Instructor");
     const instructor = await instructorRepository.findOne({
       where: { id: req.body.instructorId },
@@ -41,7 +39,6 @@ export async function createLicense(req, res) {
         });
     }
 
-    // Crear la licencia
     const newLicense = licenseRepository.create({
       instructorId: req.body.instructorId,
       tipoLicencia: req.body.tipoLicencia,
@@ -72,7 +69,6 @@ export async function getLicenses(req, res) {
       relations: ["instructor"],
     });
 
-    // Si el usuario es secretaria, filtrar datos sensibles
     if (req.user.role === "secretaria") {
       const filteredLicenses = licenses.map((license) => ({
         id: license.id,
@@ -114,7 +110,6 @@ export async function getLicenseById(req, res) {
     if (!license)
       return res.status(404).json({ message: "Licencia no encontrada." });
 
-    // Si el usuario es secretaria, filtrar datos sensibles
     if (req.user.role === "secretaria") {
       const filteredLicense = {
         id: license.id,
@@ -160,7 +155,6 @@ export async function updateLicense(req, res) {
     if (!license)
       return res.status(404).json({ message: "Licencia no encontrada." });
 
-    // Verificar unicidad del número de licencia si se actualiza
     if (req.body.numeroLicencia && req.body.numeroLicencia !== license.numeroLicencia) {
       const existingLicense = await licenseRepository.findOne({
         where: { numeroLicencia: req.body.numeroLicencia },
@@ -171,7 +165,6 @@ export async function updateLicense(req, res) {
           .json({ message: "Este número de licencia ya existe." });
     }
 
-    // Actualizar licencia
     const updatedLicense = {
       ...license,
       ...req.body,
