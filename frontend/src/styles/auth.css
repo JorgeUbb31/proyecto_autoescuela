@@ -1,0 +1,50 @@
+/* Estilos específicos para páginas de autenticación */
+
+.auth-container {
+  @apply flex justify-center items-center min-h-screen bg-gradient-to-br from-primary to-secondary px-4;
+}
+
+.auth-card {
+  @apply bg-white rounded-lg shadow-lg p-8 w-full max-w-md;
+}
+
+.auth-card h1 {
+  @apply text-center text-primary mb-2 text-2xl font-bold;
+}
+
+.auth-card h2 {
+  @apply text-center text-gray-900 mb-6 text-xl font-semibold;
+}
+
+.form-group {
+  @apply mb-4;
+}
+
+.form-group label {
+  @apply block mb-2 font-semibold text-gray-800 text-sm;
+}
+
+.form-group input {
+  @apply input-field;
+}
+
+.form-group input::placeholder {
+  @apply text-gray-400;
+}
+
+.form-group input:disabled {
+  @apply bg-gray-100 cursor-not-allowed;
+}
+
+.auth-footer {
+  @apply text-center mt-6 pt-6 border-t border-gray-200;
+}
+
+.auth-footer p {
+  @apply text-gray-600 text-sm;
+}
+
+.auth-footer a {
+  @apply text-primary font-semibold transition-colors duration-300 hover:text-secondary;
+}
+

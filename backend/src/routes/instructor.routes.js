@@ -8,54 +8,21 @@ import {
   deleteInstructor,
 } from "../controllers/instructor.controller.js";
 import { authenticateJwt } from "../middleware/authentication.middleware.js";
-import { populateUser } from "../middleware/authorization.middleware.js";
+import { isAdmin, isAdminOrInstructor, populateUser } from "../middleware/authorization.middleware.js";
 
 const router = Router();
 router.use(authenticateJwt);
 router.use(populateUser);
 
-router.post("/", async (req, res, next) => {
-  try {
-    if (req.user.role !== "administrador") {
-      return res.status(403).json({
-        message: "No tienes permisos para crear instructores.",
-      });
-    }
-    next();
-  } catch (error) {
-    res.status(500).json({ message: "Error en autorización" });
-  }
-}, createInstructor);
+router.post("/", isAdmin, createInstructor);
 
 // Cualquier usuario autenticado puede ver instructores (con filtrado si es secretaria)
 router.get("/", getInstructors);
 router.get("/:id", getInstructorById);
 
 // Solo administradores e instructores pueden actualizar su información
-router.put("/:id", async (req, res, next) => {
-  try {
-    if (req.user.role !== "administrador" && req.user.role !== "instructor" && req.user.role !== "profesor") {
-      return res.status(403).json({
-        message: "No tienes permisos para actualizar instructores.",
-      });
-    }
-    next();
-  } catch (error) {
-    res.status(500).json({ message: "Error en autorización" });
-  }
-}, updateInstructor);
+router.put("/:id", isAdminOrInstructor, updateInstructor);
 
-router.delete("/:id", async (req, res, next) => {
-  try {
-    if (req.user.role !== "administrador") {
-      return res.status(403).json({
-        message: "No tienes permisos para eliminar instructores.",
-      });
-    }
-    next();
-  } catch (error) {
-    res.status(500).json({ message: "Error en autorización" });
-  }
-}, deleteInstructor);
+router.delete("/:id", isAdmin, deleteInstructor);
 
 export default router;
