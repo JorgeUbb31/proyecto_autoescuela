@@ -5,11 +5,13 @@ import { AuthProvider } from './context/AuthContext.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import RegisterPage from './pages/RegisterPage.jsx'
+import DashboardPage from './pages/DashboardPage.jsx'
+import UsersPage from './pages/UsersPage.jsx'
+import InstructorsPage from './pages/InstructorsPage.jsx'
+import VehiclesPage from './pages/VehiclesPage.jsx'
+import LicensesPage from './pages/LicensesPage.jsx'
 import './styles/index.css'
 import './styles/App.css'
-
-// Pages principales (crearemos estas páginas en los próximos pasos)
-// import DashboardPage from './pages/DashboardPage.jsx'
 
 function App() {
   return (
@@ -25,10 +27,52 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <div style={{ padding: '2rem', textAlign: 'center' }}>
-                  <h1>Bienvenido a Autoescuela</h1>
-                  <p>Dashboard aquí (próximamente)</p>
-                </div>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/users"
+            element={
+              <ProtectedRoute>
+                <UsersPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/instructors"
+            element={
+              <ProtectedRoute>
+                <InstructorsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/vehicles"
+            element={
+              <ProtectedRoute>
+                <VehiclesPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/licenses"
+            element={
+              <ProtectedRoute>
+                <LicensesPage />
               </ProtectedRoute>
             }
           />
