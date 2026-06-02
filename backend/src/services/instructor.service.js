@@ -129,6 +129,16 @@ export async function updateInstructor(instructorId, updateData) {
     throw new Error("Instructor no encontrado.");
   }
 
+  // Si se intenta cambiar el RUT, validar que sea único
+  if (updateData.rut && updateData.rut !== instructor.rut) {
+    const existingRut = await instructorRepository.findOne({
+      where: { rut: updateData.rut },
+    });
+    if (existingRut) {
+      throw new Error("El RUT ya está registrado.");
+    }
+  }
+
   const updatedInstructor = {
     ...instructor,
     ...updateData,

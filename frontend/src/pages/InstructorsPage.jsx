@@ -3,6 +3,9 @@ import { useAuth } from '../hooks/useAuth.js'
 import Navbar from '../components/Navbar.jsx'
 import Sidebar from '../components/Sidebar.jsx'
 import Table from '../components/Table.jsx'
+import Modal from '../components/Modal.jsx'
+import Form from '../components/Form.jsx'
+import AccessDenied from '../components/AccessDenied.jsx'
 import '../styles/dashboard.css'
 
 export default function InstructorsPage() {
@@ -10,12 +13,19 @@ export default function InstructorsPage() {
   const [instructors, setInstructors] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editingInstructor, setEditingInstructor] = useState(null)
+  const [submitLoading, setSubmitLoading] = useState(false)
+  const [hasAccess, setHasAccess] = useState(true)
 
   useEffect(() => {
-    if (usuario?.role === 'usuario') {
-      setError('No tienes permisos para acceder a esta página')
+    // Solo admin y secretaria pueden acceder
+    if (!usuario || (usuario.role !== 'administrador' && usuario.role !== 'secretaria')) {
+      setHasAccess(false)
       return
     }
+    setHasAccess(true)
     fetchInstructors()
   }, [usuario])
 
@@ -47,7 +57,63 @@ export default function InstructorsPage() {
   }
 
   const handleEdit = (instructor) => {
-    alert(`Editar instructor: ${instructor.rut}`)
+    setEditingInstructor(instructor)
+    setIsEditModalOpen(true)
+  }
+
+  const handleUpdateInstructor = async (formData) => {
+    setSubmitLoading(true)
+    try {
+      const token = localStorage.getItem('accessToken')
+      const response = await fetch(`http://localhost:3001/api/instructors/${editingInstructor.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Error al actualizar instructor')
+      }
+
+      setIsEditModalOpen(false)
+      setEditingInstructor(null)
+      fetchInstructors()
+    } catch (err) {
+      throw err
+    } finally {
+      setSubmitLoading(false)
+    }
+  }
+
+  const handleCreateInstructor = async (formData) => {
+    setSubmitLoading(true)
+    try {
+      const token = localStorage.getItem('accessToken')
+      const response = await fetch('http://localhost:3001/api/instructors', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Error al crear instructor')
+      }
+
+      setIsModalOpen(false)
+      fetchInstructors()
+    } catch (err) {
+      throw err
+    } finally {
+      setSubmitLoading(false)
+    }
   }
 
   const handleDelete = async (instructorId) => {
@@ -76,7 +142,7 @@ export default function InstructorsPage() {
     { key: 'id', label: 'ID' },
     { key: 'rut', label: 'RUT' },
     { key: 'especializacion', label: 'Especialización' },
-    { key: 'anos_experiencia', label: 'Años de Experiencia' },
+    { key: 'anosExperiencia', label: 'Años de Experiencia' },
     { 
       key: 'activo', 
       label: 'Estado',
@@ -90,20 +156,8 @@ export default function InstructorsPage() {
     },
   ]
 
-  if (error && usuario?.role === 'usuario') {
-    return (
-      <div className="dashboard-layout">
-        <Navbar />
-        <div className="dashboard-content">
-          <Sidebar />
-          <main className="dashboard-main">
-            <div className="alert alert-error">
-              <p>{error}</p>
-            </div>
-          </main>
-        </div>
-      </div>
-    )
+  if (!hasAccess) {
+    return <AccessDenied message="Solo administradores y secretarias pueden acceder a la gestión de instructores" />
   }
 
   return (
@@ -133,7 +187,9 @@ export default function InstructorsPage() {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Instructores</h2>
               {usuario?.role === 'administrador' && (
-                <button className="btn-primary">Nuevo Instructor</button>
+                <button onClick={() => setIsModalOpen(true)} className="btn-primary">
+                  Nuevo Instructor
+                </button>
               )}
             </div>
 
@@ -147,6 +203,47 @@ export default function InstructorsPage() {
           </div>
         </main>
       </div>
+
+      <Modal isOpen={isModalOpen} title="Crear Nuevo Instructor" onClose={() => setIsModalOpen(false)}>
+        <Form
+          fields={[
+            { name: 'rut', label: 'RUT', type: 'text', placeholder: 'ej: 12.345.678-9', required: true },
+            { name: 'especializacion', label: 'Especialización', type: 'text', placeholder: 'ej: Conducción de Autos', required: true },
+            { name: 'anosExperiencia', label: 'Años de Experiencia', type: 'number', placeholder: 'ej: 5', required: true },
+            { 
+              name: 'activo', 
+              label: 'Estado Activo', 
+              type: 'checkbox',
+              defaultValue: true,
+            },
+          ]}
+          onSubmit={handleCreateInstructor}
+          loading={submitLoading}
+          submitLabel="Crear Instructor"
+        />
+      </Modal>
+
+      <Modal isOpen={isEditModalOpen} title="Editar Instructor" onClose={() => setIsEditModalOpen(false)}>
+        {editingInstructor && (
+          <Form
+            fields={[
+              { name: 'rut', label: 'RUT', type: 'text', placeholder: 'ej: 12.345.678-9', required: true, defaultValue: editingInstructor.rut },
+              { name: 'especializacion', label: 'Especialización', type: 'text', placeholder: 'ej: Conducción de Autos', required: true, defaultValue: editingInstructor.especializacion },
+              { name: 'anosExperiencia', label: 'Años de Experiencia', type: 'number', placeholder: 'ej: 5', required: true, defaultValue: editingInstructor.anosExperiencia },
+              { 
+                name: 'activo', 
+                label: 'Estado Activo', 
+                type: 'checkbox',
+                defaultValue: editingInstructor.activo,
+              },
+            ]}
+            onSubmit={handleUpdateInstructor}
+            loading={submitLoading}
+            submitLabel="Actualizar Instructor"
+          />
+        )}
+      </Modal>
     </div>
   )
 }
+

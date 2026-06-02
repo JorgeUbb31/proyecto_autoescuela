@@ -23,7 +23,8 @@ export function AuthProvider({ children }) {
           try {
             const respuesta = await apiClient.get('/users/profile', true)
             // Si la respuesta es exitosa, el token es válido
-            setUsuario(respuesta)
+            // Extraer el usuario del objeto data
+            setUsuario(respuesta.data)
           } catch (error) {
             // Si la validación falla, limpiar token
             console.warn('Token inválido, limpiando localStorage')

@@ -103,6 +103,9 @@ export async function updateInstructor(req, res) {
     if (error.message.includes("no encontrado")) {
       return res.status(404).json({ message: error.message });
     }
+    if (error.message.includes("ya está registrado")) {
+      return res.status(409).json({ message: error.message });
+    }
     
     res.status(500).json({ message: "Error al actualizar el instructor" });
   }

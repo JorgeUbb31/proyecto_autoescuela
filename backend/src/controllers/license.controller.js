@@ -10,7 +10,13 @@ export async function createLicense(req, res) {
     const { error } = createLicenseValidation.validate(req.body);
     if (error) return res.status(400).json({ message: error.details[0].message });
 
-    const newLicense = await licenseService.createLicense(req.body);
+    // Agregar ruta de imagen si existe
+    const licenseData = {
+      ...req.body,
+      imagenRuta: req.file ? req.file.filename : null,
+    };
+
+    const newLicense = await licenseService.createLicense(licenseData);
 
     res
       .status(201)

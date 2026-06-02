@@ -7,8 +7,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: "#D4A574",      // Beige/Tan oscuro
-        secondary: "#A89968",    // Beige más oscuro
+        primary: "#D4A574",
+        secondary: "#A89968",
         success: "#10b981",
         danger: "#ef4444",
         warning: "#f59e0b",

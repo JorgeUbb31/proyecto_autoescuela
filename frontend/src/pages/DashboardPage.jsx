@@ -45,26 +45,29 @@ export default function DashboardPage() {
           </div>
 
           <div className="dashboard-grid">
-            <div className="dashboard-card animate-slide-up" style={{ animationDelay: '0.1s' }}>
-              <h2 className="text-2xl font-bold text-primary mb-2">Usuarios</h2>
-              <p className="text-gray-600 mb-4">Gestiona los usuarios del sistema</p>
-              {usuario?.role === 'administrador' && (
+            {/* Card Usuarios - Solo Administrador */}
+            {usuario?.role === 'administrador' && (
+              <div className="dashboard-card animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                <h2 className="text-2xl font-bold text-primary mb-2">Usuarios</h2>
+                <p className="text-gray-600 mb-4">Gestiona los usuarios del sistema</p>
                 <Link to="/users" className="btn-primary inline-block">
                   Ir a Usuarios
                 </Link>
-              )}
-            </div>
+              </div>
+            )}
 
-            <div className="dashboard-card animate-slide-up" style={{ animationDelay: '0.2s' }}>
-              <h2 className="text-2xl font-bold text-primary mb-2">Instructores</h2>
-              <p className="text-gray-600 mb-4">Administra los instructores</p>
-              {(usuario?.role === 'administrador' || usuario?.role === 'secretaria') && (
+            {/* Card Instructores - Admin y Secretaria */}
+            {(usuario?.role === 'administrador' || usuario?.role === 'secretaria') && (
+              <div className="dashboard-card animate-slide-up" style={{ animationDelay: '0.2s' }}>
+                <h2 className="text-2xl font-bold text-primary mb-2">Instructores</h2>
+                <p className="text-gray-600 mb-4">Administra los instructores</p>
                 <Link to="/instructors" className="btn-primary inline-block">
                   Ir a Instructores
                 </Link>
-              )}
-            </div>
+              </div>
+            )}
 
+            {/* Card Vehículos - Todos */}
             <div className="dashboard-card animate-slide-up" style={{ animationDelay: '0.3s' }}>
               <h2 className="text-2xl font-bold text-primary mb-2">Vehículos</h2>
               <p className="text-gray-600 mb-4">Gestiona los vehículos</p>
@@ -73,15 +76,16 @@ export default function DashboardPage() {
               </Link>
             </div>
 
-            <div className="dashboard-card animate-slide-up" style={{ animationDelay: '0.4s' }}>
-              <h2 className="text-2xl font-bold text-primary mb-2">Licencias</h2>
-              <p className="text-gray-600 mb-4">Administra las licencias</p>
-              {(usuario?.role === 'administrador' || usuario?.role === 'instructor' || usuario?.role === 'profesor') && (
+            {/* Card Licencias - Admin, Instructor y Profesor */}
+            {(usuario?.role === 'administrador' || usuario?.role === 'instructor' || usuario?.role === 'profesor') && (
+              <div className="dashboard-card animate-slide-up" style={{ animationDelay: '0.4s' }}>
+                <h2 className="text-2xl font-bold text-primary mb-2">Licencias</h2>
+                <p className="text-gray-600 mb-4">Administra las licencias</p>
                 <Link to="/licenses" className="btn-primary inline-block">
                   Ir a Licencias
                 </Link>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           <div className="dashboard-info animate-slide-up" style={{ animationDelay: '0.5s' }}>

@@ -3,6 +3,9 @@ import { useAuth } from '../hooks/useAuth.js'
 import Navbar from '../components/Navbar.jsx'
 import Sidebar from '../components/Sidebar.jsx'
 import Table from '../components/Table.jsx'
+import Modal from '../components/Modal.jsx'
+import Form from '../components/Form.jsx'
+import AccessDenied from '../components/AccessDenied.jsx'
 import '../styles/dashboard.css'
 
 export default function UsersPage() {
@@ -11,15 +14,21 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [rolFilter, setRolFilter] = useState('')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editingUser, setEditingUser] = useState(null)
+  const [submitLoading, setSubmitLoading] = useState(false)
+  const [hasAccess, setHasAccess] = useState(true)
 
   const roles = ['administrador', 'instructor', 'profesor', 'secretaria', 'usuario']
   const filteredUsers = rolFilter ? users.filter(u => u.role === rolFilter) : users
 
   useEffect(() => {
     if (usuario?.role !== 'administrador') {
-      setError('No tienes permisos para acceder a esta página')
+      setHasAccess(false)
       return
     }
+    setHasAccess(true)
     fetchUsers()
   }, [usuario])
 
@@ -51,7 +60,36 @@ export default function UsersPage() {
   }
 
   const handleEdit = (user) => {
-    alert(`Editar usuario: ${user.username}`)
+    setEditingUser(user)
+    setIsEditModalOpen(true)
+  }
+
+  const handleUpdateUser = async (formData) => {
+    setSubmitLoading(true)
+    try {
+      const token = localStorage.getItem('accessToken')
+      const response = await fetch(`http://localhost:3001/api/users/${editingUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Error al actualizar usuario')
+      }
+
+      setIsEditModalOpen(false)
+      setEditingUser(null)
+      fetchUsers()
+    } catch (err) {
+      throw err
+    } finally {
+      setSubmitLoading(false)
+    }
   }
 
   const handleDelete = async (userId) => {
@@ -76,6 +114,33 @@ export default function UsersPage() {
     }
   }
 
+  const handleCreateUser = async (formData) => {
+    setSubmitLoading(true)
+    try {
+      const token = localStorage.getItem('accessToken')
+      const response = await fetch('http://localhost:3001/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Error al crear usuario')
+      }
+
+      setIsModalOpen(false)
+      fetchUsers()
+    } catch (err) {
+      throw err
+    } finally {
+      setSubmitLoading(false)
+    }
+  }
+
   const columns = [
     { key: 'id', label: 'ID' },
     { key: 'username', label: 'Usuario' },
@@ -84,20 +149,8 @@ export default function UsersPage() {
     { key: 'role', label: 'Rol' },
   ]
 
-  if (error && usuario?.role !== 'administrador') {
-    return (
-      <div className="dashboard-layout">
-        <Navbar />
-        <div className="dashboard-content">
-          <Sidebar />
-          <main className="dashboard-main">
-            <div className="alert alert-error">
-              <p>{error}</p>
-            </div>
-          </main>
-        </div>
-      </div>
-    )
+  if (!hasAccess) {
+    return <AccessDenied message="Solo los administradores pueden acceder a la gestión de usuarios" />
   }
 
   return (
@@ -126,7 +179,9 @@ export default function UsersPage() {
           <div className="bg-white rounded-lg shadow-lg p-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Usuarios</h2>
-              <button className="btn-primary">Nuevo Usuario</button>
+              <button onClick={() => setIsModalOpen(true)} className="btn-primary">
+                Nuevo Usuario
+              </button>
             </div>
 
             <div className="mb-6 flex items-center gap-4">
@@ -161,6 +216,36 @@ export default function UsersPage() {
           </div>
         </main>
       </div>
+
+      <Modal isOpen={isModalOpen} title="Crear Nuevo Usuario" onClose={() => setIsModalOpen(false)}>
+        <Form
+          fields={[
+            { name: 'username', label: 'Nombre de usuario', type: 'text', placeholder: 'ej: juan123', required: true },
+            { name: 'email', label: 'Correo electrónico', type: 'email', placeholder: 'ej: juan@example.com', required: true },
+            { name: 'rut', label: 'RUT', type: 'text', placeholder: 'ej: 12.345.678-9', required: true },
+            { name: 'password', label: 'Contraseña', type: 'password', placeholder: 'Mínimo 6 caracteres', required: true },
+          ]}
+          onSubmit={handleCreateUser}
+          loading={submitLoading}
+          submitLabel="Crear Usuario"
+        />
+      </Modal>
+
+      <Modal isOpen={isEditModalOpen} title="Editar Usuario" onClose={() => setIsEditModalOpen(false)}>
+        {editingUser && (
+          <Form
+            fields={[
+              { name: 'username', label: 'Nombre de usuario', type: 'text', placeholder: 'ej: juan123', required: true, defaultValue: editingUser.username },
+              { name: 'email', label: 'Correo electrónico', type: 'email', placeholder: 'ej: juan@example.com', required: true, defaultValue: editingUser.email },
+              { name: 'rut', label: 'RUT', type: 'text', placeholder: 'ej: 12.345.678-9', required: true, defaultValue: editingUser.rut },
+            ]}
+            onSubmit={handleUpdateUser}
+            loading={submitLoading}
+            submitLabel="Actualizar Usuario"
+          />
+        )}
+      </Modal>
     </div>
   )
 }
+

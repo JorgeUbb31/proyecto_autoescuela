@@ -75,16 +75,12 @@ function MiComponente() {
 ```javascript
 import apiClient from '../helpers/api'
 
-// GET
 const usuarios = await apiClient.get('/users')
 
-// POST
 const respuesta = await apiClient.post('/auth/login', { email, password })
 
-// PUT
 const actualizado = await apiClient.put('/users/1', { nombre: 'Juan' })
 
-// DELETE
 await apiClient.delete('/users/1')
 ```
 

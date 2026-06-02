@@ -60,20 +60,43 @@ export const initializeDatabase = async () => {
       },
     ];
 
-    const usuariosCreados = [];
+    // Hash de todas las contraseñas
+    const usuariosConPassword = await Promise.all(
+      usuarios.map(async (u) => ({
+        ...u,
+        hashedPassword: await encryptPassword(u.password),
+      }))
+    );
 
-    for (const usuario of usuarios) {
-      const hashedPassword = await encryptPassword(usuario.password);
-      const result = await connection.query(
-        `INSERT INTO users (username, rut, email, password, role) 
-         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-        [usuario.username, usuario.rut, usuario.email, hashedPassword, usuario.role]
-      );
-      usuariosCreados.push({
-        id: result[0].id,
-        ...usuario,
-      });
-    }
+    // Insertar todos los usuarios con una sola query
+    const usuariosValues = usuariosConPassword
+      .map((_, idx) => {
+        const baseIdx = idx * 5;
+        return `($${baseIdx + 1}, $${baseIdx + 2}, $${baseIdx + 3}, $${baseIdx + 4}, $${baseIdx + 5})`;
+      })
+      .join(", ");
+
+    const usuariosParams = usuariosConPassword.flatMap(u => [
+      u.username,
+      u.rut,
+      u.email,
+      u.hashedPassword,
+      u.role,
+    ]);
+
+    const usuariosResults = await connection.query(
+      `INSERT INTO users (username, rut, email, password, role)
+       VALUES ${usuariosValues} RETURNING id, username, email, rut, role`,
+      usuariosParams
+    );
+
+    const usuariosCreados = usuariosResults.map((result, idx) => ({
+      id: result.id,
+      username: result.username,
+      email: result.email,
+      rut: result.rut,
+      role: result.role,
+    }));
 
     console.log("Usuarios creados:", usuariosCreados.length);
 
@@ -98,27 +121,34 @@ export const initializeDatabase = async () => {
       },
     ];
 
-    const instructoresCreados = [];
+    // Insertar todos los instructores con una sola query
+    const instructoresValues = instructoresData
+      .map((_, idx) => {
+        const baseIdx = idx * 7;
+        return `($${baseIdx + 1}, $${baseIdx + 2}, $${baseIdx + 3}, $${baseIdx + 4}, $${baseIdx + 5}, $${baseIdx + 6}, $${baseIdx + 7})`;
+      })
+      .join(", ");
 
-    for (const instructor of instructoresData) {
-      const result = await connection.query(
-        `INSERT INTO instructores (user_id, rut, especializacion, correo, anos_experiencia, telefono, activo)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-        [
-          instructor.userId,
-          instructor.rut,
-          instructor.especializacion,
-          instructor.correo,
-          instructor.anosExperiencia,
-          instructor.telefono,
-          instructor.activo,
-        ]
-      );
-      instructoresCreados.push({
-        id: result[0].id,
-        ...instructor,
-      });
-    }
+    const instructoresParams = instructoresData.flatMap(i => [
+      i.userId,
+      i.rut,
+      i.especializacion,
+      i.correo,
+      i.anosExperiencia,
+      i.telefono,
+      i.activo,
+    ]);
+
+    const instructoresResults = await connection.query(
+      `INSERT INTO instructores (user_id, rut, especializacion, correo, anos_experiencia, telefono, activo)
+       VALUES ${instructoresValues} RETURNING id, rut`,
+      instructoresParams
+    );
+
+    const instructoresCreados = instructoresResults.map((result, idx) => ({
+      id: result.id,
+      ...instructoresData[idx],
+    }));
 
     console.log("Instructores creados:", instructoresCreados.length);
 
@@ -169,48 +199,56 @@ export const initializeDatabase = async () => {
       },
     ];
 
-    const vehiculosCreados = [];
+    // Insertar todos los vehículos con una sola query
+    const vehiculosValues = vehiculosData
+      .map((_, idx) => {
+        const baseIdx = idx * 9;
+        return `($${baseIdx + 1}, $${baseIdx + 2}, $${baseIdx + 3}, $${baseIdx + 4}, $${baseIdx + 5}, $${baseIdx + 6}, $${baseIdx + 7}, $${baseIdx + 8}, $${baseIdx + 9})`;
+      })
+      .join(", ");
 
-    for (const vehiculo of vehiculosData) {
-      const result = await connection.query(
-        `INSERT INTO vehiculos (matricula, marca, modelo, ano, tipo, transmision, vencimiento_patente, vencimiento_revision_tecnica, disponible)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
-        [
-          vehiculo.matricula,
-          vehiculo.marca,
-          vehiculo.modelo,
-          vehiculo.ano,
-          vehiculo.tipo,
-          vehiculo.transmision,
-          vehiculo.vencimientoPatente,
-          vehiculo.vencimientoRevisionTecnica,
-          vehiculo.disponible,
-        ]
-      );
-      vehiculosCreados.push({
-        id: result[0].id,
-        ...vehiculo,
-      });
-    }
+    const vehiculosParams = vehiculosData.flatMap(v => [
+      v.matricula,
+      v.marca,
+      v.modelo,
+      v.ano,
+      v.tipo,
+      v.transmision,
+      v.vencimientoPatente,
+      v.vencimientoRevisionTecnica,
+      v.disponible,
+    ]);
+
+    const vehiculosResults = await connection.query(
+      `INSERT INTO vehiculos (matricula, marca, modelo, ano, tipo, transmision, vencimiento_patente, vencimiento_revision_tecnica, disponible)
+       VALUES ${vehiculosValues} RETURNING id`,
+      vehiculosParams
+    );
+
+    const vehiculosCreados = vehiculosResults.map((result, idx) => ({
+      id: result.id,
+      ...vehiculosData[idx],
+    }));
 
     console.log("Vehículos creados:", vehiculosCreados.length);
 
-    await connection.query(
-      `INSERT INTO instructor_vehiculos (instructor_id, vehiculo_id) VALUES ($1, $2)`,
-      [instructoresCreados[0].id, vehiculosCreados[0].id]
-    );
-    await connection.query(
-      `INSERT INTO instructor_vehiculos (instructor_id, vehiculo_id) VALUES ($1, $2)`,
-      [instructoresCreados[0].id, vehiculosCreados[1].id]
-    );
+    // Asignar vehículos a instructores con una sola query
+    const asignacionesVehiculos = [
+      { instructorId: instructoresCreados[0].id, vehiculoId: vehiculosCreados[0].id },
+      { instructorId: instructoresCreados[0].id, vehiculoId: vehiculosCreados[1].id },
+      { instructorId: instructoresCreados[1].id, vehiculoId: vehiculosCreados[2].id },
+      { instructorId: instructoresCreados[1].id, vehiculoId: vehiculosCreados[3].id },
+    ];
+
+    const valuesPlaceholders = asignacionesVehiculos
+      .map((_, idx) => `($${idx * 2 + 1}, $${idx * 2 + 2})`)
+      .join(", ");
+    
+    const flatValues = asignacionesVehiculos.flatMap(a => [a.instructorId, a.vehiculoId]);
 
     await connection.query(
-      `INSERT INTO instructor_vehiculos (instructor_id, vehiculo_id) VALUES ($1, $2)`,
-      [instructoresCreados[1].id, vehiculosCreados[2].id]
-    );
-    await connection.query(
-      `INSERT INTO instructor_vehiculos (instructor_id, vehiculo_id) VALUES ($1, $2)`,
-      [instructoresCreados[1].id, vehiculosCreados[3].id]
+      `INSERT INTO instructor_vehiculos (instructor_id, vehiculo_id) VALUES ${valuesPlaceholders}`,
+      flatValues
     );
 
     console.log("Vehículos asignados a instructores");
@@ -258,22 +296,30 @@ export const initializeDatabase = async () => {
       },
     ];
 
-    for (const licencia of licenciasData) {
-      await connection.query(
-        `INSERT INTO licencias (instructor_id, tipo_licencia, numero_licencia, categoria, fecha_emision, fecha_vencimiento, lugar_emision, activa)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [
-          licencia.instructorId,
-          licencia.tipoLicencia,
-          licencia.numeroLicencia,
-          licencia.categoria,
-          licencia.fechaEmision,
-          licencia.fechaVencimiento,
-          licencia.lugarEmision,
-          licencia.activa,
-        ]
-      );
-    }
+    // Insertar todas las licencias con una sola query
+    const licenciasValues = licenciasData
+      .map((_, idx) => {
+        const baseIdx = idx * 8;
+        return `($${baseIdx + 1}, $${baseIdx + 2}, $${baseIdx + 3}, $${baseIdx + 4}, $${baseIdx + 5}, $${baseIdx + 6}, $${baseIdx + 7}, $${baseIdx + 8})`;
+      })
+      .join(", ");
+
+    const licenciasParams = licenciasData.flatMap(l => [
+      l.instructorId,
+      l.tipoLicencia,
+      l.numeroLicencia,
+      l.categoria,
+      l.fechaEmision,
+      l.fechaVencimiento,
+      l.lugarEmision,
+      l.activa,
+    ]);
+
+    await connection.query(
+      `INSERT INTO licencias (instructor_id, tipo_licencia, numero_licencia, categoria, fecha_emision, fecha_vencimiento, lugar_emision, activa)
+       VALUES ${licenciasValues}`,
+      licenciasParams
+    );
 
     console.log("Licencias creadas:", licenciasData.length);
 

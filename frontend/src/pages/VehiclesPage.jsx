@@ -3,6 +3,8 @@ import { useAuth } from '../hooks/useAuth.js'
 import Navbar from '../components/Navbar.jsx'
 import Sidebar from '../components/Sidebar.jsx'
 import Table from '../components/Table.jsx'
+import Modal from '../components/Modal.jsx'
+import Form from '../components/Form.jsx'
 import '../styles/dashboard.css'
 
 export default function VehiclesPage() {
@@ -10,6 +12,10 @@ export default function VehiclesPage() {
   const [vehicles, setVehicles] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editingVehicle, setEditingVehicle] = useState(null)
+  const [submitLoading, setSubmitLoading] = useState(false)
 
   useEffect(() => {
     fetchVehicles()
@@ -43,7 +49,63 @@ export default function VehiclesPage() {
   }
 
   const handleEdit = (vehicle) => {
-    alert(`Editar vehículo: ${vehicle.matricula}`)
+    setEditingVehicle(vehicle)
+    setIsEditModalOpen(true)
+  }
+
+  const handleUpdateVehicle = async (formData) => {
+    setSubmitLoading(true)
+    try {
+      const token = localStorage.getItem('accessToken')
+      const response = await fetch(`http://localhost:3001/api/vehicles/${editingVehicle.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Error al actualizar vehículo')
+      }
+
+      setIsEditModalOpen(false)
+      setEditingVehicle(null)
+      fetchVehicles()
+    } catch (err) {
+      throw err
+    } finally {
+      setSubmitLoading(false)
+    }
+  }
+
+  const handleCreateVehicle = async (formData) => {
+    setSubmitLoading(true)
+    try {
+      const token = localStorage.getItem('accessToken')
+      const response = await fetch('http://localhost:3001/api/vehicles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Error al crear vehículo')
+      }
+
+      setIsModalOpen(false)
+      fetchVehicles()
+    } catch (err) {
+      throw err
+    } finally {
+      setSubmitLoading(false)
+    }
   }
 
   const handleDelete = async (vehicleId) => {
@@ -115,7 +177,9 @@ export default function VehiclesPage() {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Vehículos</h2>
               {usuario?.role === 'administrador' && (
-                <button className="btn-primary">Nuevo Vehículo</button>
+                <button onClick={() => setIsModalOpen(true)} className="btn-primary">
+                  Nuevo Vehículo
+                </button>
               )}
             </div>
 
@@ -129,6 +193,95 @@ export default function VehiclesPage() {
           </div>
         </main>
       </div>
+
+      <Modal isOpen={isModalOpen} title="Crear Nuevo Vehículo" onClose={() => setIsModalOpen(false)}>
+        <Form
+          fields={[
+            { name: 'matricula', label: 'Matrícula', type: 'text', placeholder: 'ej: ABCD-1234', required: true },
+            { name: 'marca', label: 'Marca', type: 'text', placeholder: 'ej: Toyota', required: true },
+            { name: 'modelo', label: 'Modelo', type: 'text', placeholder: 'ej: Corolla', required: true },
+            { name: 'año', label: 'Año', type: 'number', placeholder: 'ej: 2023', required: true },
+            { 
+              name: 'tipo', 
+              label: 'Tipo', 
+              type: 'select',
+              options: [
+                { value: 'auto', label: 'Auto' },
+                { value: 'camion', label: 'Camión' },
+                { value: 'moto', label: 'Moto' },
+              ],
+              required: true,
+            },
+            { 
+              name: 'transmision', 
+              label: 'Transmisión', 
+              type: 'select',
+              options: [
+                { value: 'manual', label: 'Manual' },
+                { value: 'automatica', label: 'Automática' },
+              ],
+              required: true,
+            },
+            { name: 'vencimiento_patente', label: 'Vencimiento de Patente', type: 'date', required: true },
+            { 
+              name: 'disponible', 
+              label: 'Disponible', 
+              type: 'checkbox',
+              defaultValue: true,
+            },
+          ]}
+          onSubmit={handleCreateVehicle}
+          loading={submitLoading}
+          submitLabel="Crear Vehículo"
+        />
+      </Modal>
+
+      <Modal isOpen={isEditModalOpen} title="Editar Vehículo" onClose={() => setIsEditModalOpen(false)}>
+        {editingVehicle && (
+          <Form
+            fields={[
+              { name: 'matricula', label: 'Matrícula', type: 'text', placeholder: 'ej: ABCD-1234', required: true, defaultValue: editingVehicle.matricula },
+              { name: 'marca', label: 'Marca', type: 'text', placeholder: 'ej: Toyota', required: true, defaultValue: editingVehicle.marca },
+              { name: 'modelo', label: 'Modelo', type: 'text', placeholder: 'ej: Corolla', required: true, defaultValue: editingVehicle.modelo },
+              { name: 'año', label: 'Año', type: 'number', placeholder: 'ej: 2023', required: true, defaultValue: editingVehicle.año },
+              { 
+                name: 'tipo', 
+                label: 'Tipo', 
+                type: 'select',
+                options: [
+                  { value: 'auto', label: 'Auto' },
+                  { value: 'camion', label: 'Camión' },
+                  { value: 'moto', label: 'Moto' },
+                ],
+                required: true,
+                defaultValue: editingVehicle.tipo,
+              },
+              { 
+                name: 'transmision', 
+                label: 'Transmisión', 
+                type: 'select',
+                options: [
+                  { value: 'manual', label: 'Manual' },
+                  { value: 'automatica', label: 'Automática' },
+                ],
+                required: true,
+                defaultValue: editingVehicle.transmision,
+              },
+              { name: 'vencimiento_patente', label: 'Vencimiento de Patente', type: 'date', required: true, defaultValue: editingVehicle.vencimientoPatente },
+              { 
+                name: 'disponible', 
+                label: 'Disponible', 
+                type: 'checkbox',
+                defaultValue: editingVehicle.disponible,
+              },
+            ]}
+            onSubmit={handleUpdateVehicle}
+            loading={submitLoading}
+            submitLabel="Actualizar Vehículo"
+          />
+        )}
+      </Modal>
     </div>
   )
 }
+

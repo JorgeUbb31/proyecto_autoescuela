@@ -69,7 +69,12 @@
 }
 
 .form-group input {
-  @apply input-field;
+  @apply w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-primary focus:ring-0 transition-all duration-300 bg-white hover:border-gray-400;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.form-group input:focus {
+  box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.2);
 }
 
 .form-group input::placeholder {
