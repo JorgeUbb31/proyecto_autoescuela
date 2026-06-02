@@ -7,7 +7,7 @@ export const initializeDatabase = async () => {
     const connection = AppDataSource;
 
     if (!connection.isInitialized) {
-      console.log("⚠️  Base de datos no inicializada en initdb");
+      console.log("Base de datos no inicializada en initdb");
       return;
     }
 
@@ -102,7 +102,7 @@ export const initializeDatabase = async () => {
 
     for (const instructor of instructoresData) {
       const result = await connection.query(
-        `INSERT INTO instructores (userId, rut, especializacion, correo, anosExperiencia, telefono, activo)
+        `INSERT INTO instructores (user_id, rut, especializacion, correo, anos_experiencia, telefono, activo)
          VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
         [
           instructor.userId,
@@ -173,7 +173,7 @@ export const initializeDatabase = async () => {
 
     for (const vehiculo of vehiculosData) {
       const result = await connection.query(
-        `INSERT INTO vehiculos (matricula, marca, modelo, ano, tipo, transmision, vencimientoPatente, vencimientoRevisionTecnica, disponible)
+        `INSERT INTO vehiculos (matricula, marca, modelo, ano, tipo, transmision, vencimiento_patente, vencimiento_revision_tecnica, disponible)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
         [
           vehiculo.matricula,
@@ -196,20 +196,20 @@ export const initializeDatabase = async () => {
     console.log("Vehículos creados:", vehiculosCreados.length);
 
     await connection.query(
-      `INSERT INTO instructor_vehiculos (instructorId, vehiculoId) VALUES ($1, $2)`,
+      `INSERT INTO instructor_vehiculos (instructor_id, vehiculo_id) VALUES ($1, $2)`,
       [instructoresCreados[0].id, vehiculosCreados[0].id]
     );
     await connection.query(
-      `INSERT INTO instructor_vehiculos (instructorId, vehiculoId) VALUES ($1, $2)`,
+      `INSERT INTO instructor_vehiculos (instructor_id, vehiculo_id) VALUES ($1, $2)`,
       [instructoresCreados[0].id, vehiculosCreados[1].id]
     );
 
     await connection.query(
-      `INSERT INTO instructor_vehiculos (instructorId, vehiculoId) VALUES ($1, $2)`,
+      `INSERT INTO instructor_vehiculos (instructor_id, vehiculo_id) VALUES ($1, $2)`,
       [instructoresCreados[1].id, vehiculosCreados[2].id]
     );
     await connection.query(
-      `INSERT INTO instructor_vehiculos (instructorId, vehiculoId) VALUES ($1, $2)`,
+      `INSERT INTO instructor_vehiculos (instructor_id, vehiculo_id) VALUES ($1, $2)`,
       [instructoresCreados[1].id, vehiculosCreados[3].id]
     );
 
@@ -260,7 +260,7 @@ export const initializeDatabase = async () => {
 
     for (const licencia of licenciasData) {
       await connection.query(
-        `INSERT INTO licencias (instructorId, tipoLicencia, numeroLicencia, categoria, fechaEmision, fechaVencimiento, lugarEmision, activa)
+        `INSERT INTO licencias (instructor_id, tipo_licencia, numero_licencia, categoria, fecha_emision, fecha_vencimiento, lugar_emision, activa)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [
           licencia.instructorId,

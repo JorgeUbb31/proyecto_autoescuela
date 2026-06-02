@@ -52,13 +52,23 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="auth-container">
+    <div className="auth-container py-8">
       <div className="auth-card">
         <h1>Autoescuela</h1>
         <h2>Crear Cuenta</h2>
 
-        {error && <div className="alert alert-error">{error}</div>}
-        {success && <div className="alert alert-success">{success}</div>}
+        {error && (
+          <div className="alert alert-error">
+            <span className="text-xl">✗</span>
+            <span>{error}</span>
+          </div>
+        )}
+        {success && (
+          <div className="alert alert-success">
+            <span className="text-xl">✓</span>
+            <span>{success}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -71,6 +81,7 @@ export default function RegisterPage() {
               onChange={handleChange}
               required
               placeholder="tu_usuario"
+              className="input-field"
             />
           </div>
 
@@ -84,6 +95,7 @@ export default function RegisterPage() {
               onChange={handleChange}
               required
               placeholder="tu@email.com"
+              className="input-field"
             />
           </div>
 
@@ -97,6 +109,7 @@ export default function RegisterPage() {
               onChange={handleChange}
               required
               placeholder="12.345.678-9"
+              className="input-field"
             />
           </div>
 
@@ -110,6 +123,7 @@ export default function RegisterPage() {
               onChange={handleChange}
               required
               placeholder="••••••••"
+              className="input-field"
             />
           </div>
 
@@ -123,17 +137,36 @@ export default function RegisterPage() {
               onChange={handleChange}
               required
               placeholder="••••••••"
+              className="input-field"
             />
           </div>
 
-          <button type="submit" disabled={cargando} className="btn-primary">
-            {cargando ? 'Cargando...' : 'Registrarse'}
+          <button
+            type="submit"
+            disabled={cargando}
+            className="w-full btn-primary py-3 mt-2 animate-slide-up"
+            style={{ animationDelay: '0.7s' }}
+          >
+            {cargando ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                Cargando...
+              </span>
+            ) : (
+              'Registrarse'
+            )}
           </button>
         </form>
 
         <div className="auth-footer">
           <p>
-            ¿Ya tienes cuenta? <Link to="/login">Inicia sesión aquí</Link>
+            ¿Ya tienes cuenta?{' '}
+            <Link
+              to="/login"
+              className="text-primary font-semibold transition-colors duration-300 hover:text-secondary"
+            >
+              Inicia sesión aquí
+            </Link>
           </p>
         </div>
       </div>

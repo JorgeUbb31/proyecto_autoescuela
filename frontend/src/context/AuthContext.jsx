@@ -19,11 +19,17 @@ export function AuthProvider({ children }) {
     const verificarToken = async () => {
       try {
         if (apiClient.tieneToken()) {
-          // Aquí podrías hacer una llamada para obtener el perfil del usuario
-          const token = apiClient.obtenerToken()
-          // Decodificar token JWT manualmente para obtener datos (sin validar firma)
-          const payload = JSON.parse(atob(token.split('.')[1]))
-          setUsuario(payload)
+          // Hacer llamada al backend para validar el token
+          try {
+            const respuesta = await apiClient.get('/users/profile', true)
+            // Si la respuesta es exitosa, el token es válido
+            setUsuario(respuesta)
+          } catch (error) {
+            // Si la validación falla, limpiar token
+            console.warn('Token inválido, limpiando localStorage')
+            apiClient.eliminarToken()
+            setUsuario(null)
+          }
         }
       } catch (error) {
         console.error('Error verificando token:', error)

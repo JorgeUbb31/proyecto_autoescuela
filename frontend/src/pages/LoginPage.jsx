@@ -38,7 +38,12 @@ export default function LoginPage() {
         <h1>Autoescuela</h1>
         <h2>Iniciar Sesión</h2>
 
-        {error && <div className="alert alert-error">{error}</div>}
+        {error && (
+          <div className="alert alert-error">
+            <span className="text-xl">✗</span>
+            <span>{error}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -51,6 +56,7 @@ export default function LoginPage() {
               onChange={handleChange}
               required
               placeholder="tu@email.com"
+              className="input-field"
             />
           </div>
 
@@ -64,17 +70,36 @@ export default function LoginPage() {
               onChange={handleChange}
               required
               placeholder="••••••••"
+              className="input-field"
             />
           </div>
 
-          <button type="submit" disabled={cargando} className="btn-primary">
-            {cargando ? 'Cargando...' : 'Iniciar Sesión'}
+          <button
+            type="submit"
+            disabled={cargando}
+            className="w-full btn-primary py-3 mt-2 animate-slide-up"
+            style={{ animationDelay: '0.5s' }}
+          >
+            {cargando ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                Cargando...
+              </span>
+            ) : (
+              'Iniciar Sesión'
+            )}
           </button>
         </form>
 
         <div className="auth-footer">
           <p>
-            ¿No tienes cuenta? <Link to="/register">Regístrate aquí</Link>
+            ¿No tienes cuenta?{' '}
+            <Link
+              to="/register"
+              className="text-primary font-semibold transition-colors duration-300 hover:text-secondary"
+            >
+              Regístrate aquí
+            </Link>
           </p>
         </div>
       </div>

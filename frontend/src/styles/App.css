@@ -1,7 +1,7 @@
 /* Estilos específicos de App */
 
 .app {
-  @apply min-h-screen flex flex-col;
+  @apply min-h-screen flex flex-col bg-beige-50;
 }
 
 .app-content {
