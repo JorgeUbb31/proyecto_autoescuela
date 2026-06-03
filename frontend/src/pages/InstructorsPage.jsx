@@ -5,12 +5,16 @@ import Sidebar from '../components/Sidebar.jsx'
 import Table from '../components/Table.jsx'
 import Modal from '../components/Modal.jsx'
 import Form from '../components/Form.jsx'
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal.jsx'
 import AccessDenied from '../components/AccessDenied.jsx'
+import * as instructorService from '../services/instructorService.js'
+import * as userService from '../services/userService.js'
 import '../styles/dashboard.css'
 
 export default function InstructorsPage() {
   const { usuario } = useAuth()
   const [instructors, setInstructors] = useState([])
+  const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -18,6 +22,9 @@ export default function InstructorsPage() {
   const [editingInstructor, setEditingInstructor] = useState(null)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [hasAccess, setHasAccess] = useState(true)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [instructorToDelete, setInstructorToDelete] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     // Solo admin y secretaria pueden acceder
@@ -27,26 +34,25 @@ export default function InstructorsPage() {
     }
     setHasAccess(true)
     fetchInstructors()
+    fetchUsers()
   }, [usuario])
+
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem('accessToken')
+      const usersArray = await userService.fetchUsers(token)
+      setUsers(usersArray)
+    } catch (err) {
+      console.error('Error al cargar usuarios:', err)
+    }
+  }
 
   const fetchInstructors = async () => {
     setLoading(true)
     setError('')
     try {
       const token = localStorage.getItem('accessToken')
-      const response = await fetch('http://localhost:3001/api/instructors', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error('Error al cargar instructores')
-      }
-
-      const data = await response.json()
-      // Manejar tanto respuesta de array como de objeto
-      const instructorsArray = Array.isArray(data) ? data : (data?.data || [])
+      const instructorsArray = await instructorService.fetchInstructors(token)
       setInstructors(instructorsArray)
     } catch (err) {
       setError(err.message)
@@ -65,20 +71,7 @@ export default function InstructorsPage() {
     setSubmitLoading(true)
     try {
       const token = localStorage.getItem('accessToken')
-      const response = await fetch(`http://localhost:3001/api/instructors/${editingInstructor.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Error al actualizar instructor')
-      }
-
+      await instructorService.updateInstructor(token, editingInstructor.id, formData)
       setIsEditModalOpen(false)
       setEditingInstructor(null)
       fetchInstructors()
@@ -93,20 +86,7 @@ export default function InstructorsPage() {
     setSubmitLoading(true)
     try {
       const token = localStorage.getItem('accessToken')
-      const response = await fetch('http://localhost:3001/api/instructors', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Error al crear instructor')
-      }
-
+      await instructorService.createInstructor(token, formData)
       setIsModalOpen(false)
       fetchInstructors()
     } catch (err) {
@@ -116,26 +96,33 @@ export default function InstructorsPage() {
     }
   }
 
-  const handleDelete = async (instructorId) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este instructor?')) return
+  const handleDelete = (instructor) => {
+    setInstructorToDelete(instructor)
+    setIsDeleteModalOpen(true)
+  }
 
+  const handleConfirmDelete = async () => {
+    if (!instructorToDelete) return
+    
+    setIsDeleting(true)
+    setError('')
     try {
       const token = localStorage.getItem('accessToken')
-      const response = await fetch(`http://localhost:3001/api/instructors/${instructorId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error('Error al eliminar instructor')
-      }
-
-      setInstructors(instructors.filter((i) => i.id !== instructorId))
+      await instructorService.deleteInstructor(token, instructorToDelete.id)
+      setInstructors(instructors.filter((i) => i.id !== instructorToDelete.id))
+      setIsDeleteModalOpen(false)
+      setInstructorToDelete(null)
     } catch (err) {
       setError(err.message)
+      console.error('Error al eliminar:', err)
+    } finally {
+      setIsDeleting(false)
     }
+  }
+
+  const handleCancelDelete = () => {
+    setIsDeleteModalOpen(false)
+    setInstructorToDelete(null)
   }
 
   const columns = [
@@ -207,6 +194,13 @@ export default function InstructorsPage() {
       <Modal isOpen={isModalOpen} title="Crear Nuevo Instructor" onClose={() => setIsModalOpen(false)}>
         <Form
           fields={[
+            { 
+              name: 'userId', 
+              label: 'Seleccionar Usuario', 
+              type: 'select',
+              options: users.map(u => ({ value: u.id, label: `${u.username} (${u.rut})` })),
+              required: true 
+            },
             { name: 'rut', label: 'RUT', type: 'text', placeholder: 'ej: 12.345.678-9', required: true },
             { name: 'especializacion', label: 'Especialización', type: 'text', placeholder: 'ej: Conducción de Autos', required: true },
             { name: 'anosExperiencia', label: 'Años de Experiencia', type: 'number', placeholder: 'ej: 5', required: true },
@@ -243,6 +237,16 @@ export default function InstructorsPage() {
           />
         )}
       </Modal>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        title="Eliminar Instructor"
+        message={`¿Estás seguro de que quieres eliminar al instructor ${instructorToDelete?.rut}?`}
+        resourceName={`al instructor "${instructorToDelete?.rut}"`}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        isLoading={isDeleting}
+      />
     </div>
   )
 }

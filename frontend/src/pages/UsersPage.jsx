@@ -5,7 +5,9 @@ import Sidebar from '../components/Sidebar.jsx'
 import Table from '../components/Table.jsx'
 import Modal from '../components/Modal.jsx'
 import Form from '../components/Form.jsx'
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal.jsx'
 import AccessDenied from '../components/AccessDenied.jsx'
+import * as userService from '../services/userService.js'
 import '../styles/dashboard.css'
 
 export default function UsersPage() {
@@ -19,6 +21,9 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState(null)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [hasAccess, setHasAccess] = useState(true)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [userToDelete, setUserToDelete] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const roles = ['administrador', 'instructor', 'profesor', 'secretaria', 'usuario']
   const filteredUsers = rolFilter ? users.filter(u => u.role === rolFilter) : users
@@ -37,19 +42,7 @@ export default function UsersPage() {
     setError('')
     try {
       const token = localStorage.getItem('accessToken')
-      const response = await fetch('http://localhost:3001/api/users', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error('Error al cargar usuarios')
-      }
-
-      const data = await response.json()
-      // Manejar tanto respuesta de array como de objeto
-      const usersArray = Array.isArray(data) ? data : (data?.data || [])
+      const usersArray = await userService.fetchUsers(token)
       setUsers(usersArray)
     } catch (err) {
       setError(err.message)
@@ -68,20 +61,7 @@ export default function UsersPage() {
     setSubmitLoading(true)
     try {
       const token = localStorage.getItem('accessToken')
-      const response = await fetch(`http://localhost:3001/api/users/${editingUser.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Error al actualizar usuario')
-      }
-
+      await userService.updateUser(token, editingUser.id, formData)
       setIsEditModalOpen(false)
       setEditingUser(null)
       fetchUsers()
@@ -92,46 +72,40 @@ export default function UsersPage() {
     }
   }
 
-  const handleDelete = async (userId) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este usuario?')) return
+  const handleDelete = (user) => {
+    setUserToDelete(user)
+    setIsDeleteModalOpen(true)
+  }
 
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return
+    
+    setIsDeleting(true)
+    setError('')
     try {
       const token = localStorage.getItem('accessToken')
-      const response = await fetch(`http://localhost:3001/api/users/${userId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error('Error al eliminar usuario')
-      }
-
-      setUsers(users.filter((u) => u.id !== userId))
+      await userService.deleteUser(token, userToDelete.id)
+      setUsers(users.filter((u) => u.id !== userToDelete.id))
+      setIsDeleteModalOpen(false)
+      setUserToDelete(null)
     } catch (err) {
       setError(err.message)
+      console.error('Error al eliminar:', err)
+    } finally {
+      setIsDeleting(false)
     }
+  }
+
+  const handleCancelDelete = () => {
+    setIsDeleteModalOpen(false)
+    setUserToDelete(null)
   }
 
   const handleCreateUser = async (formData) => {
     setSubmitLoading(true)
     try {
       const token = localStorage.getItem('accessToken')
-      const response = await fetch('http://localhost:3001/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Error al crear usuario')
-      }
-
+      await userService.createUser(token, formData)
       setIsModalOpen(false)
       fetchUsers()
     } catch (err) {
@@ -142,7 +116,6 @@ export default function UsersPage() {
   }
 
   const columns = [
-    { key: 'id', label: 'ID' },
     { key: 'username', label: 'Usuario' },
     { key: 'email', label: 'Email' },
     { key: 'rut', label: 'RUT' },
@@ -245,6 +218,16 @@ export default function UsersPage() {
           />
         )}
       </Modal>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        title="Eliminar Usuario"
+        message={`¿Estás seguro de que quieres eliminar al usuario ${userToDelete?.username}?`}
+        resourceName={`al usuario "${userToDelete?.username}"`}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        isLoading={isDeleting}
+      />
     </div>
   )
 }

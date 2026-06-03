@@ -5,7 +5,9 @@ import Sidebar from '../components/Sidebar.jsx'
 import Table from '../components/Table.jsx'
 import Modal from '../components/Modal.jsx'
 import Form from '../components/Form.jsx'
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal.jsx'
 import AccessDenied from '../components/AccessDenied.jsx'
+import * as licenseService from '../services/licenseService.js'
 import '../styles/dashboard.css'
 
 export default function LicensesPage() {
@@ -18,6 +20,9 @@ export default function LicensesPage() {
   const [editingLicense, setEditingLicense] = useState(null)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [hasAccess, setHasAccess] = useState(true)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [licenseToDelete, setLicenseToDelete] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     // Solo admin, instructor y profesor pueden acceder
@@ -34,19 +39,7 @@ export default function LicensesPage() {
     setError('')
     try {
       const token = localStorage.getItem('accessToken')
-      const response = await fetch('http://localhost:3001/api/licenses', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error('Error al cargar licencias')
-      }
-
-      const data = await response.json()
-      // Manejar tanto respuesta de array como de objeto
-      const licensesArray = Array.isArray(data) ? data : (data?.data || [])
+      const licensesArray = await licenseService.fetchLicenses(token)
       setLicenses(licensesArray)
     } catch (err) {
       setError(err.message)
@@ -65,29 +58,7 @@ export default function LicensesPage() {
     setSubmitLoading(true)
     try {
       const token = localStorage.getItem('accessToken')
-      
-      // Determinar si es FormData o JSON
-      const isFormData = formData instanceof FormData
-      const headers = {
-        Authorization: `Bearer ${token}`,
-      }
-      
-      // No agregar Content-Type si es FormData (el navegador lo hará automáticamente)
-      if (!isFormData) {
-        headers['Content-Type'] = 'application/json'
-      }
-      
-      const response = await fetch(`http://localhost:3001/api/licenses/${editingLicense.id}`, {
-        method: 'PUT',
-        headers,
-        body: isFormData ? formData : JSON.stringify(formData),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Error al actualizar licencia')
-      }
-
+      await licenseService.updateLicense(token, editingLicense.id, formData)
       setIsEditModalOpen(false)
       setEditingLicense(null)
       fetchLicenses()
@@ -102,29 +73,7 @@ export default function LicensesPage() {
     setSubmitLoading(true)
     try {
       const token = localStorage.getItem('accessToken')
-      
-      // Determinar si es FormData o JSON
-      const isFormData = formData instanceof FormData
-      const headers = {
-        Authorization: `Bearer ${token}`,
-      }
-      
-      // No agregar Content-Type si es FormData (el navegador lo hará automáticamente)
-      if (!isFormData) {
-        headers['Content-Type'] = 'application/json'
-      }
-      
-      const response = await fetch('http://localhost:3001/api/licenses', {
-        method: 'POST',
-        headers,
-        body: isFormData ? formData : JSON.stringify(formData),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Error al crear licencia')
-      }
-
+      await licenseService.createLicense(token, formData)
       setIsModalOpen(false)
       fetchLicenses()
     } catch (err) {
@@ -134,26 +83,33 @@ export default function LicensesPage() {
     }
   }
 
-  const handleDelete = async (licenseId) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar esta licencia?')) return
+  const handleDelete = (license) => {
+    setLicenseToDelete(license)
+    setIsDeleteModalOpen(true)
+  }
 
+  const handleConfirmDelete = async () => {
+    if (!licenseToDelete) return
+    
+    setIsDeleting(true)
+    setError('')
     try {
       const token = localStorage.getItem('accessToken')
-      const response = await fetch(`http://localhost:3001/api/licenses/${licenseId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error('Error al eliminar licencia')
-      }
-
-      setLicenses(licenses.filter((l) => l.id !== licenseId))
+      await licenseService.deleteLicense(token, licenseToDelete.id)
+      setLicenses(licenses.filter((l) => l.id !== licenseToDelete.id))
+      setIsDeleteModalOpen(false)
+      setLicenseToDelete(null)
     } catch (err) {
       setError(err.message)
+      console.error('Error al eliminar:', err)
+    } finally {
+      setIsDeleting(false)
     }
+  }
+
+  const handleCancelDelete = () => {
+    setIsDeleteModalOpen(false)
+    setLicenseToDelete(null)
   }
 
   const columns = [
@@ -302,6 +258,16 @@ export default function LicensesPage() {
           />
         )}
       </Modal>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        title="Eliminar Licencia"
+        message={`¿Estás seguro de que quieres eliminar la licencia ${licenseToDelete?.numeroLicencia}?`}
+        resourceName={`la licencia "${licenseToDelete?.numeroLicencia}"`}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        isLoading={isDeleting}
+      />
     </div>
   )
 }

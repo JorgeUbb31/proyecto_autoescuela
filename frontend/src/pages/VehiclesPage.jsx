@@ -5,7 +5,9 @@ import Sidebar from '../components/Sidebar.jsx'
 import Table from '../components/Table.jsx'
 import Modal from '../components/Modal.jsx'
 import Form from '../components/Form.jsx'
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal.jsx'
 import '../styles/dashboard.css'
+import * as vehicleService from '../services/vehicleService.js'
 
 export default function VehiclesPage() {
   const { usuario } = useAuth()
@@ -16,6 +18,9 @@ export default function VehiclesPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editingVehicle, setEditingVehicle] = useState(null)
   const [submitLoading, setSubmitLoading] = useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [vehicleToDelete, setVehicleToDelete] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     fetchVehicles()
@@ -26,19 +31,7 @@ export default function VehiclesPage() {
     setError('')
     try {
       const token = localStorage.getItem('accessToken')
-      const response = await fetch('http://localhost:3001/api/vehicles', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error('Error al cargar vehículos')
-      }
-
-      const data = await response.json()
-      // Manejar tanto respuesta de array como de objeto
-      const vehiclesArray = Array.isArray(data) ? data : (data?.data || [])
+      const vehiclesArray = await vehicleService.fetchVehicles(token)
       setVehicles(vehiclesArray)
     } catch (err) {
       setError(err.message)
@@ -57,20 +50,7 @@ export default function VehiclesPage() {
     setSubmitLoading(true)
     try {
       const token = localStorage.getItem('accessToken')
-      const response = await fetch(`http://localhost:3001/api/vehicles/${editingVehicle.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Error al actualizar vehículo')
-      }
-
+      await vehicleService.updateVehicle(token, editingVehicle.id, formData)
       setIsEditModalOpen(false)
       setEditingVehicle(null)
       fetchVehicles()
@@ -85,20 +65,7 @@ export default function VehiclesPage() {
     setSubmitLoading(true)
     try {
       const token = localStorage.getItem('accessToken')
-      const response = await fetch('http://localhost:3001/api/vehicles', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Error al crear vehículo')
-      }
-
+      await vehicleService.createVehicle(token, formData)
       setIsModalOpen(false)
       fetchVehicles()
     } catch (err) {
@@ -108,26 +75,33 @@ export default function VehiclesPage() {
     }
   }
 
-  const handleDelete = async (vehicleId) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este vehículo?')) return
+  const handleDelete = (vehicle) => {
+    setVehicleToDelete(vehicle)
+    setIsDeleteModalOpen(true)
+  }
 
+  const handleConfirmDelete = async () => {
+    if (!vehicleToDelete) return
+    
+    setIsDeleting(true)
+    setError('')
     try {
       const token = localStorage.getItem('accessToken')
-      const response = await fetch(`http://localhost:3001/api/vehicles/${vehicleId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error('Error al eliminar vehículo')
-      }
-
-      setVehicles(vehicles.filter((v) => v.id !== vehicleId))
+      await vehicleService.deleteVehicle(token, vehicleToDelete.id)
+      setVehicles(vehicles.filter((v) => v.id !== vehicleToDelete.id))
+      setIsDeleteModalOpen(false)
+      setVehicleToDelete(null)
     } catch (err) {
       setError(err.message)
+      console.error('Error al eliminar:', err)
+    } finally {
+      setIsDeleting(false)
     }
+  }
+
+  const handleCancelDelete = () => {
+    setIsDeleteModalOpen(false)
+    setVehicleToDelete(null)
   }
 
   const columns = [
@@ -281,6 +255,16 @@ export default function VehiclesPage() {
           />
         )}
       </Modal>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        title="Eliminar Vehículo"
+        message={`¿Estás seguro de que quieres eliminar el vehículo ${vehicleToDelete?.matricula}?`}
+        resourceName={`el vehículo "${vehicleToDelete?.matricula}"`}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        isLoading={isDeleting}
+      />
     </div>
   )
 }
