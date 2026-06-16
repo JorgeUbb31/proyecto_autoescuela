@@ -51,6 +51,11 @@ export const LicenseEntity = new EntitySchema({
             default: true,
             comment: "La licencia es válida y activa",
         },
+        imagenRuta: {
+            type: String,
+            nullable: true,
+            comment: "Ruta o nombre del archivo de imagen de la licencia",
+        },
         createdAt: {
             type: "timestamp",
             default: () => "CURRENT_TIMESTAMP",

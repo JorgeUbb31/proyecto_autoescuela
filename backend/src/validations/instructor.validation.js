@@ -46,6 +46,13 @@ export const createInstructorValidation = Joi.object({
   });
 
 export const updateInstructorValidation = Joi.object({
+  rut: Joi.string()
+    .pattern(/^\d{2}\.\d{3}\.\d{3}-[0-9kK]$/)
+    .max(12)
+    .messages({
+      "string.pattern.base": "El formato del RUT es inválido.",
+      "string.max": "El RUT no puede exceder 12 caracteres.",
+    }),
   especializacion: Joi.string()
     .max(100)
     .messages({

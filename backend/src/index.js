@@ -1,5 +1,5 @@
 "use strict";
-import express, { json, urlencoded } from "express";
+import express, { json, urlencoded, static as expressStatic } from "express";
 import cors from "cors";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
@@ -7,6 +7,11 @@ import indexRoutes from "./routes/index.routes.js";
 import { connectDB, AppDataSource } from "./config/configDb.js";
 import { PORT, HOST } from "./config/configEnv.js";
 import { initializeDatabase } from "./config/initdb.js";
+import { fileURLToPath } from "url";
+import path from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function setupServer() {
   try {
@@ -37,6 +42,9 @@ async function setupServer() {
     app.use(cookieParser());
 
     app.use(morgan("dev"));
+
+    // Servir archivos estáticos (imágenes)
+    app.use("/uploads", expressStatic(path.join(__dirname, "../uploads")));
 
     app.use("/api", indexRoutes);
 

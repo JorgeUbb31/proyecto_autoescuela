@@ -11,12 +11,6 @@ export const InstructorEntity = new EntitySchema({
             primary: true,
             generated: true,
         },
-        userId: {
-            type: Number,
-            nullable: false,
-            unique: true,
-            comment: "Referencia al usuario en tabla usuarios",
-        },
         rut: {
             type: String,
             unique: true,
@@ -34,6 +28,7 @@ export const InstructorEntity = new EntitySchema({
             comment: "Correo electrónico de contacto del instructor",
         },
         anosExperiencia: {
+            name: "anos_experiencia",
             type: Number,
             default: 0,
             comment: "Años de experiencia como instructor",
@@ -62,7 +57,7 @@ export const InstructorEntity = new EntitySchema({
         usuario: {
             target: "User",
             type: "many-to-one",
-            joinColumn: { name: "userId" },
+            joinColumn: { name: "user_id" },
             onDelete: "CASCADE",
         },
         licencias: {

@@ -43,11 +43,13 @@ export const VehicleEntity = new EntitySchema({
             comment: "Tipo de transmisión: AUTOMATICA, MANUAL",
         },
         vencimientoPatente: {
+            name: "vencimiento_patente",
             type: "date",
             nullable: true,
             comment: "Fecha de vencimiento de patente",
         },
         vencimientoRevisionTecnica: {
+            name: "vencimiento_revision_tecnica",
             type: "date",
             nullable: true,
             comment: "Fecha de vencimiento de revisión técnica",
