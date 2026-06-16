@@ -41,12 +41,9 @@ export async function login(req, res) {
   } catch (error) {
     console.error("Error en auth.controller.js -> login(): ", error);
     
-    // Manejar errores específicos
-    if (error.message.includes("no está registrado")) {
-      return res.status(404).json({ message: error.message });
-    }
-    if (error.message.includes("no es correcta")) {
-      return res.status(401).json({ message: error.message });
+    // Mensaje genérico para login fallido (por razones de seguridad)
+    if (error.message === "INVALID_CREDENTIALS") {
+      return res.status(401).json({ message: "Credenciales incorrectas" });
     }
     
     return res.status(500).json({ message: "Error al iniciar sesión" });

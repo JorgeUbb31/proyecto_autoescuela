@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth.js'
+import { useInstructors } from '../hooks/useInstructors.js'
 import Navbar from '../components/Navbar.jsx'
 import Sidebar from '../components/Sidebar.jsx'
 import Table from '../components/Table.jsx'
@@ -7,20 +8,15 @@ import Modal from '../components/Modal.jsx'
 import Form from '../components/Form.jsx'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal.jsx'
 import AccessDenied from '../components/AccessDenied.jsx'
-import * as instructorService from '../services/instructorService.js'
-import * as userService from '../services/userService.js'
 import '../styles/dashboard.css'
 
 export default function InstructorsPage() {
   const { usuario } = useAuth()
-  const [instructors, setInstructors] = useState([])
-  const [users, setUsers] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const { instructors, users, loading, error, submitLoading, loadData, createInstructor, updateInstructor, deleteInstructor, setError } = useInstructors()
+  
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editingInstructor, setEditingInstructor] = useState(null)
-  const [submitLoading, setSubmitLoading] = useState(false)
   const [hasAccess, setHasAccess] = useState(true)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [instructorToDelete, setInstructorToDelete] = useState(null)
@@ -33,34 +29,8 @@ export default function InstructorsPage() {
       return
     }
     setHasAccess(true)
-    fetchInstructors()
-    fetchUsers()
+    loadData()
   }, [usuario])
-
-  const fetchUsers = async () => {
-    try {
-      const token = localStorage.getItem('accessToken')
-      const usersArray = await userService.fetchUsers(token)
-      setUsers(usersArray)
-    } catch (err) {
-      console.error('Error al cargar usuarios:', err)
-    }
-  }
-
-  const fetchInstructors = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const token = localStorage.getItem('accessToken')
-      const instructorsArray = await instructorService.fetchInstructors(token)
-      setInstructors(instructorsArray)
-    } catch (err) {
-      setError(err.message)
-      setInstructors([])
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleEdit = (instructor) => {
     setEditingInstructor(instructor)
@@ -68,31 +38,21 @@ export default function InstructorsPage() {
   }
 
   const handleUpdateInstructor = async (formData) => {
-    setSubmitLoading(true)
     try {
-      const token = localStorage.getItem('accessToken')
-      await instructorService.updateInstructor(token, editingInstructor.id, formData)
+      await updateInstructor(editingInstructor.id, formData)
       setIsEditModalOpen(false)
       setEditingInstructor(null)
-      fetchInstructors()
     } catch (err) {
       throw err
-    } finally {
-      setSubmitLoading(false)
     }
   }
 
   const handleCreateInstructor = async (formData) => {
-    setSubmitLoading(true)
     try {
-      const token = localStorage.getItem('accessToken')
-      await instructorService.createInstructor(token, formData)
+      await createInstructor(formData)
       setIsModalOpen(false)
-      fetchInstructors()
     } catch (err) {
       throw err
-    } finally {
-      setSubmitLoading(false)
     }
   }
 
@@ -105,11 +65,8 @@ export default function InstructorsPage() {
     if (!instructorToDelete) return
     
     setIsDeleting(true)
-    setError('')
     try {
-      const token = localStorage.getItem('accessToken')
-      await instructorService.deleteInstructor(token, instructorToDelete.id)
-      setInstructors(instructors.filter((i) => i.id !== instructorToDelete.id))
+      await deleteInstructor(instructorToDelete.id)
       setIsDeleteModalOpen(false)
       setInstructorToDelete(null)
     } catch (err) {

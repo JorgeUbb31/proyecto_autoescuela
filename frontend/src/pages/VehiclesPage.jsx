@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth.js'
+import { useVehicles } from '../hooks/useVehicles.js'
 import Navbar from '../components/Navbar.jsx'
 import Sidebar from '../components/Sidebar.jsx'
 import Table from '../components/Table.jsx'
@@ -7,17 +8,14 @@ import Modal from '../components/Modal.jsx'
 import Form from '../components/Form.jsx'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal.jsx'
 import '../styles/dashboard.css'
-import * as vehicleService from '../services/vehicleService.js'
 
 export default function VehiclesPage() {
   const { usuario } = useAuth()
-  const [vehicles, setVehicles] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const { vehicles, loading, error, submitLoading, fetchVehicles, createVehicle, updateVehicle, deleteVehicle, setError } = useVehicles()
+  
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editingVehicle, setEditingVehicle] = useState(null)
-  const [submitLoading, setSubmitLoading] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [vehicleToDelete, setVehicleToDelete] = useState(null)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -26,52 +24,27 @@ export default function VehiclesPage() {
     fetchVehicles()
   }, [usuario])
 
-  const fetchVehicles = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const token = localStorage.getItem('accessToken')
-      const vehiclesArray = await vehicleService.fetchVehicles(token)
-      setVehicles(vehiclesArray)
-    } catch (err) {
-      setError(err.message)
-      setVehicles([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleEdit = (vehicle) => {
     setEditingVehicle(vehicle)
     setIsEditModalOpen(true)
   }
 
   const handleUpdateVehicle = async (formData) => {
-    setSubmitLoading(true)
     try {
-      const token = localStorage.getItem('accessToken')
-      await vehicleService.updateVehicle(token, editingVehicle.id, formData)
+      await updateVehicle(editingVehicle.id, formData)
       setIsEditModalOpen(false)
       setEditingVehicle(null)
-      fetchVehicles()
     } catch (err) {
       throw err
-    } finally {
-      setSubmitLoading(false)
     }
   }
 
   const handleCreateVehicle = async (formData) => {
-    setSubmitLoading(true)
     try {
-      const token = localStorage.getItem('accessToken')
-      await vehicleService.createVehicle(token, formData)
+      await createVehicle(formData)
       setIsModalOpen(false)
-      fetchVehicles()
     } catch (err) {
       throw err
-    } finally {
-      setSubmitLoading(false)
     }
   }
 
@@ -84,11 +57,8 @@ export default function VehiclesPage() {
     if (!vehicleToDelete) return
     
     setIsDeleting(true)
-    setError('')
     try {
-      const token = localStorage.getItem('accessToken')
-      await vehicleService.deleteVehicle(token, vehicleToDelete.id)
-      setVehicles(vehicles.filter((v) => v.id !== vehicleToDelete.id))
+      await deleteVehicle(vehicleToDelete.id)
       setIsDeleteModalOpen(false)
       setVehicleToDelete(null)
     } catch (err) {

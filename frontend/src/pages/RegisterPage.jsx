@@ -1,42 +1,20 @@
-import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.js'
+import { useRegisterForm } from '../hooks/useRegisterForm.js'
 import '../styles/auth.css'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
   const { registro, cargando } = useAuth()
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    rut: '',
-    password: '',
-    passwordConfirm: '',
-  })
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
+  const { formData, error, success, handleChange, setError, setSuccess, validateForm } = useRegisterForm()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setSuccess('')
 
-    // Validaciones
-    if (formData.password !== formData.passwordConfirm) {
-      setError('Las contraseñas no coinciden')
-      return
-    }
-
-    if (formData.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres')
+    // Validar formulario
+    if (!validateForm()) {
       return
     }
 

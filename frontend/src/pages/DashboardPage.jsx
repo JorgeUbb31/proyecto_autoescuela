@@ -1,29 +1,13 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.js'
+import { useDashboard } from '../hooks/useDashboard.js'
 import Navbar from '../components/Navbar.jsx'
 import Sidebar from '../components/Sidebar.jsx'
 import '../styles/dashboard.css'
 
 export default function DashboardPage() {
   const { usuario } = useAuth()
-
-  const getWelcomeMessage = () => {
-    const hour = new Date().getHours()
-    if (hour < 12) return 'Buenos días'
-    if (hour < 18) return 'Buenas tardes'
-    return 'Buenas noches'
-  }
-
-  const getRoleDisplay = () => {
-    const roleMap = {
-      administrador: 'Administrador',
-      instructor: 'Instructor',
-      profesor: 'Profesor',
-      secretaria: 'Secretaria',
-      usuario: 'Usuario',
-    }
-    return roleMap[usuario?.role] || usuario?.role
-  }
+  const { welcomeMessage, roleDisplay } = useDashboard(usuario)
 
   return (
     <div className="dashboard-layout">
@@ -32,14 +16,13 @@ export default function DashboardPage() {
       <div className="dashboard-content">
         <Sidebar />
         
-        <main className="dashboard-main">
           <div className="dashboard-header animate-slide-up">
             <div>
               <h1 className="text-4xl font-bold text-primary mb-2">
-                {getWelcomeMessage()}, {usuario?.username}
+                {welcomeMessage}, {usuario?.username}
               </h1>
               <p className="text-gray-600 text-lg">
-                Eres un {getRoleDisplay()}
+                Eres un {roleDisplay}
               </p>
             </div>
           </div>
@@ -106,7 +89,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Rol</p>
-                  <p className="font-semibold text-gray-900">{getRoleDisplay()}</p>
+                  <p className="font-semibold text-gray-900">{roleDisplay}</p>
                 </div>
               </div>
             </div>

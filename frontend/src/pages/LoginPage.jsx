@@ -1,24 +1,12 @@
-import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.js'
+import { useLoginForm } from '../hooks/useLoginForm.js'
 import '../styles/auth.css'
 
 export default function LoginPage() {
   const navigate = useNavigate()
   const { login, cargando } = useAuth()
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  })
-  const [error, setError] = useState('')
-
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
+  const { formData, error, handleChange, setError } = useLoginForm()
 
   const handleSubmit = async (e) => {
     e.preventDefault()

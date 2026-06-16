@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth.js'
+import { useLicenses } from '../hooks/useLicenses.js'
 import Navbar from '../components/Navbar.jsx'
 import Sidebar from '../components/Sidebar.jsx'
 import Table from '../components/Table.jsx'
@@ -7,18 +8,15 @@ import Modal from '../components/Modal.jsx'
 import Form from '../components/Form.jsx'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal.jsx'
 import AccessDenied from '../components/AccessDenied.jsx'
-import * as licenseService from '../services/licenseService.js'
 import '../styles/dashboard.css'
 
 export default function LicensesPage() {
   const { usuario } = useAuth()
-  const [licenses, setLicenses] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const { licenses, loading, error, submitLoading, fetchLicenses, createLicense, updateLicense, deleteLicense, setError } = useLicenses()
+  
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editingLicense, setEditingLicense] = useState(null)
-  const [submitLoading, setSubmitLoading] = useState(false)
   const [hasAccess, setHasAccess] = useState(true)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [licenseToDelete, setLicenseToDelete] = useState(null)
@@ -34,52 +32,27 @@ export default function LicensesPage() {
     fetchLicenses()
   }, [usuario])
 
-  const fetchLicenses = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const token = localStorage.getItem('accessToken')
-      const licensesArray = await licenseService.fetchLicenses(token)
-      setLicenses(licensesArray)
-    } catch (err) {
-      setError(err.message)
-      setLicenses([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleEdit = (license) => {
     setEditingLicense(license)
     setIsEditModalOpen(true)
   }
 
   const handleUpdateLicense = async (formData) => {
-    setSubmitLoading(true)
     try {
-      const token = localStorage.getItem('accessToken')
-      await licenseService.updateLicense(token, editingLicense.id, formData)
+      await updateLicense(editingLicense.id, formData)
       setIsEditModalOpen(false)
       setEditingLicense(null)
-      fetchLicenses()
     } catch (err) {
       throw err
-    } finally {
-      setSubmitLoading(false)
     }
   }
 
   const handleCreateLicense = async (formData) => {
-    setSubmitLoading(true)
     try {
-      const token = localStorage.getItem('accessToken')
-      await licenseService.createLicense(token, formData)
+      await createLicense(formData)
       setIsModalOpen(false)
-      fetchLicenses()
     } catch (err) {
       throw err
-    } finally {
-      setSubmitLoading(false)
     }
   }
 
@@ -92,11 +65,8 @@ export default function LicensesPage() {
     if (!licenseToDelete) return
     
     setIsDeleting(true)
-    setError('')
     try {
-      const token = localStorage.getItem('accessToken')
-      await licenseService.deleteLicense(token, licenseToDelete.id)
-      setLicenses(licenses.filter((l) => l.id !== licenseToDelete.id))
+      await deleteLicense(licenseToDelete.id)
       setIsDeleteModalOpen(false)
       setLicenseToDelete(null)
     } catch (err) {

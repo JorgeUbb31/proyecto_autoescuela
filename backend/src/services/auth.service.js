@@ -50,12 +50,14 @@ export async function loginUser(email, password) {
 
   const userFound = await userRepository.findOne({ where: { email } });
   if (!userFound) {
-    throw new Error("El correo electrónico no está registrado");
+    // No revelar si el email existe o no por razones de seguridad
+    throw new Error("INVALID_CREDENTIALS");
   }
 
   const isMatch = await comparePassword(password, userFound.password);
   if (!isMatch) {
-    throw new Error("La contraseña ingresada no es correcta");
+    // No revelar cuál de los datos es incorrecto
+    throw new Error("INVALID_CREDENTIALS");
   }
 
   const payload = {
