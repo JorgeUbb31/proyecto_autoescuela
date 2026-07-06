@@ -15,7 +15,7 @@ const router = Router();
 router.use(authenticateJwt);
 router.use(populateUser);
 
-router.post("/", upload.single('imagen'), isAdminOrInstructor, createLicense);
+router.post("/", upload.single('imagen'), createLicense);
 
 router.get("/", getLicenses);
 router.get("/:id", getLicenseById);

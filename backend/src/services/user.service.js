@@ -1,13 +1,15 @@
 "use strict";
 import User from "../entity/user.entity.js";
 import { AppDataSource } from "../config/configDb.js";
+import { mapUser, mapUsers } from "./response.mapper.js";
 
 /**
  * Obtiene todos los usuarios de la base de datos
  */
 export async function getAllUsers() {
   const userRepository = AppDataSource.getRepository(User);
-  return await userRepository.find();
+  const users = await userRepository.find();
+  return mapUsers(users);
 }
 
 /**
@@ -16,12 +18,11 @@ export async function getAllUsers() {
 export async function getPublicUsers() {
   const userRepository = AppDataSource.getRepository(User);
   const users = await userRepository.find();
-  
-  return users.map(u => ({
-    id: u.id,
-    nombre: u.nombre,
-    username: u.username,
-    email: u.email
+
+  return mapUsers(users).map((user) => ({
+    id: user.id,
+    username: user.username,
+    email: user.email,
   }));
 }
 
@@ -30,7 +31,8 @@ export async function getPublicUsers() {
  */
 export async function getUserById(id) {
   const userRepository = AppDataSource.getRepository(User);
-  return await userRepository.findOne({ where: { id } });
+  const user = await userRepository.findOne({ where: { id } });
+  return mapUser(user);
 }
 
 /**
@@ -63,18 +65,8 @@ export async function getUserByUsername(username) {
 export async function getUserProfile(userEmail) {
   const userRepository = AppDataSource.getRepository(User);
   const user = await userRepository.findOne({ where: { email: userEmail } });
-  
-  if (!user) {
-    return null;
-  }
 
-  return {
-    id: user.id,
-    username: user.username,
-    email: user.email,
-    rut: user.rut,
-    role: user.role
-  };
+  return mapUser(user);
 }
 
 /**
@@ -101,13 +93,8 @@ export async function updateUserRole(userId, newRole) {
   user.role = finalRole;
   
   await userRepository.save(user);
-  
-  return {
-    id: user.id,
-    username: user.username,
-    email: user.email,
-    role: user.role
-  };
+
+  return mapUser(user);
 }
 
 /**
@@ -145,7 +132,7 @@ export async function updateUser(userId, updateData) {
 
   await userRepository.save(user);
 
-  return user;
+  return mapUser(user);
 }
 
 /**
@@ -162,5 +149,5 @@ export async function deleteUser(userId) {
 
   await userRepository.remove(user);
 
-  return user;
+  return mapUser(user);
 }

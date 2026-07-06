@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import * as instructorService from '../services/instructorService.js'
 import * as userService from '../services/userService.js'
+import * as licenseService from '../services/licenseService.js'
 
 export function useInstructors() {
   const [instructors, setInstructors] = useState([])
   const [users, setUsers] = useState([])
+  const [licenses, setLicenses] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [submitLoading, setSubmitLoading] = useState(false)
@@ -33,6 +35,36 @@ export function useInstructors() {
       setUsers(usersArray)
     } catch (err) {
       console.error('Error al cargar usuarios:', err)
+    }
+  }
+
+  const fetchLicenses = async () => {
+    try {
+      const token = localStorage.getItem('accessToken')
+      const licensesArray = await licenseService.fetchLicenses(token)
+      setLicenses(licensesArray)
+    } catch (err) {
+      console.error('Error al cargar licencias:', err)
+    }
+  }
+
+  const createProfessor = async (formData) => {
+    setSubmitLoading(true)
+    try {
+      const token = localStorage.getItem('accessToken')
+      await userService.updateUserRole(token, formData.userId, 'profesor')
+      await licenseService.createLicense(token, {
+        ...formData,
+        userId: formData.userId,
+        activa: formData.activa !== false,
+      })
+      await loadData()
+      return { success: true }
+    } catch (err) {
+      setError(err.message)
+      throw err
+    } finally {
+      setSubmitLoading(false)
     }
   }
 
@@ -85,16 +117,19 @@ export function useInstructors() {
   const loadData = async () => {
     await fetchInstructors()
     await fetchUsers()
+    await fetchLicenses()
   }
 
   return {
     instructors,
     users,
+    licenses,
     loading,
     error,
     submitLoading,
     fetchInstructors,
     fetchUsers,
+    createProfessor,
     createInstructor,
     updateInstructor,
     deleteInstructor,

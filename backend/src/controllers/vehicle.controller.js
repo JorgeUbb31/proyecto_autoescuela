@@ -2,6 +2,7 @@
 import {
   createVehicleValidation,
   updateVehicleValidation,
+  maintenanceVehicleValidation,
 } from "../validations/vehicle.validation.js";
 import * as vehicleService from "../services/vehicle.service.js";
 
@@ -126,6 +127,31 @@ export async function deleteVehicle(req, res) {
     }
     
     res.status(500).json({ message: "Error al eliminar el vehículo" });
+  }
+}
+
+export async function updateMaintenance(req, res) {
+  try {
+    const vehicleId = parseInt(req.params.id);
+    const { error } = maintenanceVehicleValidation.validate(req.body);
+
+    if (error) return res.status(400).json({ message: error.details[0].message });
+    if (isNaN(vehicleId)) return res.status(400).json({ message: "ID inválido" });
+
+    const updatedVehicle = await vehicleService.updateMaintenance(vehicleId, req.body, req.user.role);
+
+    res.status(200).json({
+      message: "Estado de mantenimiento actualizado correctamente",
+      data: updatedVehicle,
+    });
+  } catch (error) {
+    console.error("Error en vehicle.controller.js -> updateMaintenance(): ", error);
+
+    if (error.message.includes("no encontrado")) {
+      return res.status(404).json({ message: error.message });
+    }
+
+    res.status(500).json({ message: "Error al actualizar el mantenimiento" });
   }
 }
 

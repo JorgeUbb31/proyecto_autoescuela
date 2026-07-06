@@ -15,7 +15,7 @@ export default function DashboardPage() {
       
       <div className="dashboard-content">
         <Sidebar />
-        
+        <main className="dashboard-main">
           <div className="dashboard-header animate-slide-up">
             <div>
               <h1 className="text-4xl font-bold text-primary mb-2">
@@ -59,8 +59,8 @@ export default function DashboardPage() {
               </Link>
             </div>
 
-            {/* Card Licencias - Admin, Instructor y Profesor */}
-            {(usuario?.role === 'administrador' || usuario?.role === 'instructor' || usuario?.role === 'profesor') && (
+            {/* Card Licencias - Admin, Instructor, Profesor y Usuario */}
+            {(usuario?.role === 'administrador' || usuario?.role === 'instructor' || usuario?.role === 'profesor' || usuario?.role === 'usuario') && (
               <div className="dashboard-card animate-slide-up" style={{ animationDelay: '0.4s' }}>
                 <h2 className="text-2xl font-bold text-primary mb-2">Licencias</h2>
                 <p className="text-gray-600 mb-4">Administra las licencias</p>

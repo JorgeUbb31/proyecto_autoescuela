@@ -1,5 +1,6 @@
 "use strict";
 import { AppDataSource } from "../config/configDb.js";
+import { mapLicense, mapLicenses } from "./response.mapper.js";
 
 /**
  * Crea una nueva licencia
@@ -7,6 +8,7 @@ import { AppDataSource } from "../config/configDb.js";
 export async function createLicense(licenseData) {
   const licenseRepository = AppDataSource.getRepository("Licencia");
   const instructorRepository = AppDataSource.getRepository("Instructor");
+  const userRepository = AppDataSource.getRepository("Usuario");
 
   // Verificar que no exista una licencia con ese número
   const existingLicense = await licenseRepository.findOne({
@@ -17,98 +19,106 @@ export async function createLicense(licenseData) {
     throw new Error("Esta licencia ya existe.");
   }
 
-  // Verificar que el instructor existe y tiene rol válido
-  const instructor = await instructorRepository.findOne({
-    where: { id: licenseData.instructorId },
-    relations: ["usuario"],
-  });
+  let instructor = null;
+  if (licenseData.instructorId) {
+    instructor = await instructorRepository.findOne({
+      where: { id: licenseData.instructorId },
+      relations: ["usuario"],
+    });
+  }
+
+  let user = null;
+  if (licenseData.userId) {
+    user = await userRepository.findOne({ where: { id: licenseData.userId } });
+  }
+
+  if (!instructor && licenseData.userId && user) {
+    instructor = await instructorRepository.findOne({
+      where: { userId: user.id },
+      relations: ["usuario"],
+    });
+  }
+
+  if (!instructor && licenseData.userId && user) {
+    const pendingInstructor = instructorRepository.create({
+      userId: user.id,
+      rut: licenseData.rut || user.rut,
+      especializacion: licenseData.especializacion || "Licencia presentada",
+      correo: user.email,
+      anosExperiencia: 0,
+      activo: true,
+    });
+
+    await instructorRepository.save(pendingInstructor);
+    instructor = pendingInstructor;
+  }
 
   if (!instructor) {
     throw new Error("Instructor no encontrado.");
   }
 
-  if (
-    instructor.usuario.role !== "instructor" &&
-    instructor.usuario.role !== "profesor"
-  ) {
-    throw new Error(
-      "Solo instructores o profesores pueden tener licencias asociadas."
-    );
+  if (!user) {
+    user = await userRepository.findOne({ where: { id: instructor.userId } });
+  }
+
+  if (!user || !["instructor", "profesor", "usuario"].includes(user.role)) {
+    throw new Error("Solo usuarios, instructores o profesores pueden enviar licencias para revisión.");
   }
 
   const newLicense = licenseRepository.create({
-    instructorId: licenseData.instructorId,
+    instructorId: instructor.id,
     tipoLicencia: licenseData.tipoLicencia,
     numeroLicencia: licenseData.numeroLicencia,
     categoria: licenseData.categoria,
     fechaEmision: licenseData.fechaEmision,
     fechaVencimiento: licenseData.fechaVencimiento,
-    activa: licenseData.activa,
+    activa: licenseData.activa ?? false,
   });
 
   await licenseRepository.save(newLicense);
 
-  return newLicense;
+  return mapLicense(newLicense);
 }
 
 /**
  * Obtiene todas las licencias con filtrado según rol del usuario
  */
-export async function getAllLicenses(userRole = null) {
+export async function getAllLicenses(userRole = null, currentUser = null) {
   const licenseRepository = AppDataSource.getRepository("Licencia");
   const licenses = await licenseRepository.find({
-    relations: ["instructor"],
+    relations: ["instructor", "instructor.usuario"],
   });
 
-  // Si el usuario es secretaria, filtrar información sensible
-  if (userRole === "secretaria") {
-    return licenses.map((license) => ({
-      id: license.id,
-      tipoLicencia: license.tipoLicencia,
-      categoria: license.categoria,
-      fechaVencimiento: license.fechaVencimiento,
-      activa: license.activa,
-      instructor: {
-        id: license.instructor?.id,
-        especializacion: license.instructor?.especializacion,
-      },
-    }));
-  }
+  const visibleLicenses = currentUser?.role?.toLowerCase() === "usuario"
+    ? licenses.filter((license) => license.instructor?.userId === currentUser.id || license.instructor?.usuario?.id === currentUser.id)
+    : licenses;
 
-  return licenses;
+  return mapLicenses(visibleLicenses, userRole);
 }
 
 /**
  * Obtiene una licencia por su ID con filtrado según rol del usuario
  */
-export async function getLicenseById(licenseId, userRole = null) {
+export async function getLicenseById(licenseId, userRole = null, currentUser = null) {
   const licenseRepository = AppDataSource.getRepository("Licencia");
 
   const license = await licenseRepository.findOne({
     where: { id: licenseId },
-    relations: ["instructor"],
+    relations: ["instructor", "instructor.usuario"],
   });
 
   if (!license) {
     throw new Error("Licencia no encontrada.");
   }
 
-  // Si el usuario es secretaria, filtrar información
-  if (userRole === "secretaria") {
-    return {
-      id: license.id,
-      tipoLicencia: license.tipoLicencia,
-      categoria: license.categoria,
-      fechaVencimiento: license.fechaVencimiento,
-      activa: license.activa,
-      instructor: {
-        id: license.instructor?.id,
-        especializacion: license.instructor?.especializacion,
-      },
-    };
+  if (currentUser?.role?.toLowerCase() === "usuario") {
+    const isOwner = license.instructor?.userId === currentUser.id || license.instructor?.usuario?.id === currentUser.id;
+    if (!isOwner) {
+      throw new Error("Licencia no encontrada.");
+    }
   }
 
-  return license;
+  return mapLicense(license, userRole);
 }
 
 /**
@@ -145,7 +155,7 @@ export async function updateLicense(licenseId, updateData) {
 
   await licenseRepository.save(updatedLicense);
 
-  return updatedLicense;
+  return mapLicense(updatedLicense);
 }
 
 /**
@@ -164,5 +174,5 @@ export async function deleteLicense(licenseId) {
 
   await licenseRepository.remove(license);
 
-  return license;
+  return mapLicense(license);
 }

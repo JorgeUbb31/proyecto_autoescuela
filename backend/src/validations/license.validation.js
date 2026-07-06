@@ -6,11 +6,18 @@ export const createLicenseValidation = Joi.object({
   instructorId: Joi.number()
     .integer()
     .positive()
-    .required()
+    .optional()
     .messages({
       "number.base": "El ID del instructor debe ser un número.",
       "number.positive": "El ID del instructor debe ser positivo.",
-      "any.required": "El ID del instructor es obligatorio.",
+    }),
+  userId: Joi.number()
+    .integer()
+    .positive()
+    .optional()
+    .messages({
+      "number.base": "El ID de usuario debe ser un número.",
+      "number.positive": "El ID de usuario debe ser positivo.",
     }),
   tipoLicencia: Joi.string()
     .required()
@@ -58,7 +65,7 @@ export const createLicenseValidation = Joi.object({
       "any.required": "La fecha de vencimiento es obligatoria.",
     }),
   activa: Joi.boolean()
-    .default(true)
+    .default(false)
     .messages({
       "boolean.base": "El estado debe ser un valor booleano.",
     }),

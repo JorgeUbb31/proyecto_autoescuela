@@ -23,8 +23,8 @@ export default function LicensesPage() {
   const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
-    // Solo admin, instructor y profesor pueden acceder
-    if (!usuario || (usuario.role !== 'administrador' && usuario.role !== 'instructor' && usuario.role !== 'profesor')) {
+    // Admin, instructor, profesor y usuario pueden acceder para gestionar o enviar su licencia
+    if (!usuario || (usuario.role !== 'administrador' && usuario.role !== 'instructor' && usuario.role !== 'profesor' && usuario.role !== 'usuario')) {
       setHasAccess(false)
       return
     }
@@ -144,9 +144,9 @@ export default function LicensesPage() {
           <div className="bg-white rounded-lg shadow-lg p-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Licencias</h2>
-              {usuario?.role === 'administrador' && (
+              {(usuario?.role === 'administrador' || usuario?.role === 'usuario' || usuario?.role === 'instructor' || usuario?.role === 'profesor') && (
                 <button onClick={() => setIsModalOpen(true)} className="btn-primary">
-                  Nueva Licencia
+                  {usuario?.role === 'usuario' ? 'Enviar mi licencia' : 'Nueva Licencia'}
                 </button>
               )}
             </div>
@@ -165,34 +165,26 @@ export default function LicensesPage() {
       <Modal isOpen={isModalOpen} title="Crear Nueva Licencia" onClose={() => setIsModalOpen(false)}>
         <Form
           fields={[
-            { name: 'instructor_id', label: 'ID del Instructor', type: 'number', placeholder: 'ej: 1', required: true },
-            { name: 'numero_licencia', label: 'Número de Licencia', type: 'text', placeholder: 'ej: LIC12345678', required: true },
+            { name: 'numeroLicencia', label: 'Número de Licencia', type: 'text', placeholder: 'ej: LIC12345678', required: true },
             { 
-              name: 'tipo_licencia', 
+              name: 'tipoLicencia', 
               label: 'Tipo de Licencia', 
               type: 'select',
               options: [
-                { value: 'clase_A', label: 'Clase A' },
-                { value: 'clase_B', label: 'Clase B' },
-                { value: 'clase_C', label: 'Clase C' },
+                { value: 'A', label: 'A' },
+                { value: 'B', label: 'B' },
+                { value: 'C', label: 'C' },
               ],
               required: true,
             },
             { name: 'categoria', label: 'Categoría', type: 'text', placeholder: 'ej: Conducción', required: true },
-            { name: 'fecha_emision', label: 'Fecha de Emisión', type: 'date', required: true },
-            { name: 'fecha_vencimiento', label: 'Fecha de Vencimiento', type: 'date', required: true },
-            { 
-              name: 'imagen', 
-              label: 'Imagen de la Licencia', 
-              type: 'file',
-              accept: 'image/*',
-              required: false,
-            },
+            { name: 'fechaEmision', label: 'Fecha de Emisión', type: 'date', required: true },
+            { name: 'fechaVencimiento', label: 'Fecha de Vencimiento', type: 'date', required: true },
             { 
               name: 'activa', 
-              label: 'Licencia Activa', 
+              label: 'Enviar como licencia aprobada', 
               type: 'checkbox',
-              defaultValue: true,
+              defaultValue: false,
             },
           ]}
           onSubmit={handleCreateLicense}
@@ -205,22 +197,21 @@ export default function LicensesPage() {
         {editingLicense && (
           <Form
             fields={[
-              { name: 'numero_licencia', label: 'Número de Licencia', type: 'text', placeholder: 'ej: LIC12345678', required: true, defaultValue: editingLicense.numeroLicencia },
+              { name: 'numeroLicencia', label: 'Número de Licencia', type: 'text', placeholder: 'ej: LIC12345678', required: true, defaultValue: editingLicense.numeroLicencia },
               { 
-                name: 'tipo_licencia', 
+                name: 'tipoLicencia', 
                 label: 'Tipo de Licencia', 
                 type: 'select',
                 options: [
-                  { value: 'clase_A', label: 'Clase A' },
-                  { value: 'clase_B', label: 'Clase B' },
-                  { value: 'clase_C', label: 'Clase C' },
+                  { value: 'A', label: 'A' },
+                  { value: 'B', label: 'B' },
+                  { value: 'C', label: 'C' },
                 ],
                 required: true,
                 defaultValue: editingLicense.tipoLicencia,
               },
               { name: 'categoria', label: 'Categoría', type: 'text', placeholder: 'ej: Profesional', defaultValue: editingLicense.categoria },
-              { name: 'fecha_vencimiento', label: 'Fecha de Vencimiento', type: 'date', required: true, defaultValue: editingLicense.fechaVencimiento },
-              { name: 'imagen_ruta', label: 'Imagen de Licencia', type: 'file', accept: 'image/*' },
+              { name: 'fechaVencimiento', label: 'Fecha de Vencimiento', type: 'date', required: true, defaultValue: editingLicense.fechaVencimiento },
             ]}
             onSubmit={handleUpdateLicense}
             loading={submitLoading}

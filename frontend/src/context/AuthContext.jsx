@@ -1,5 +1,6 @@
 import { createContext, useState, useCallback, useEffect } from 'react'
 import apiClient from '../helpers/api.js'
+import Modal from '../components/Modal.jsx'
 
 /**
  * Contexto de autenticación
@@ -11,6 +12,19 @@ export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
+  const [showInstructorPromotionNotice, setShowInstructorPromotionNotice] = useState(false)
+
+  const mostrarAvisoInstructor = useCallback((usuarioActual) => {
+    if (!usuarioActual || usuarioActual.role !== 'instructor') return
+
+    const userId = usuarioActual.id ?? usuarioActual.userId
+    const storageKey = userId ? `instructorPromotionNoticeSeen:${userId}` : 'instructorPromotionNoticeSeen'
+
+    if (localStorage.getItem(storageKey) === 'true') return
+
+    localStorage.setItem(storageKey, 'true')
+    setShowInstructorPromotionNotice(true)
+  }, [])
 
   /**
    * Verifica si hay un token válido al montar el componente
@@ -25,6 +39,7 @@ export function AuthProvider({ children }) {
             // Si la respuesta es exitosa, el token es válido
             // Extraer el usuario del objeto data
             setUsuario(respuesta.data)
+            mostrarAvisoInstructor(respuesta.data)
           } catch (error) {
             // Si la validación falla, limpiar token
             console.warn('Token inválido, limpiando localStorage')
@@ -59,6 +74,7 @@ export function AuthProvider({ children }) {
       // Decodificar token para obtener datos del usuario
       const payload = JSON.parse(atob(respuesta.accessToken.split('.')[1]))
       setUsuario(payload)
+      mostrarAvisoInstructor(payload)
 
       return respuesta
     } catch (error) {
@@ -119,5 +135,28 @@ export function AuthProvider({ children }) {
     logout,
   }
 
-  return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={valor}>
+      {children}
+      <Modal
+        isOpen={showInstructorPromotionNotice}
+        title="¡Nuevo rol asignado!"
+        onClose={() => setShowInstructorPromotionNotice(false)}
+      >
+        <div className="space-y-3">
+          <p className="text-gray-700">
+            Ahora eres instructor de manejo. Puedes comenzar a gestionar tus asignaciones y licencias desde el panel.
+          </p>
+          <div className="flex justify-end">
+            <button
+              onClick={() => setShowInstructorPromotionNotice(false)}
+              className="btn-primary"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      </Modal>
+    </AuthContext.Provider>
+  )
 }

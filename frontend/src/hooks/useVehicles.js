@@ -55,6 +55,19 @@ export function useVehicles() {
     }
   }
 
+  // Actualizar estado de mantenimiento
+  const updateMaintenance = async (vehicleId, payload) => {
+    try {
+      const token = localStorage.getItem('accessToken')
+      const response = await vehicleService.updateMaintenance(token, vehicleId, payload)
+      await fetchVehicles()
+      return response
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }
+
   // Eliminar vehículo
   const deleteVehicle = async (vehicleId) => {
     try {
@@ -76,6 +89,7 @@ export function useVehicles() {
     fetchVehicles,
     createVehicle,
     updateVehicle,
+    updateMaintenance,
     deleteVehicle,
     setError,
   }

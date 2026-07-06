@@ -59,6 +59,21 @@ export const VehicleEntity = new EntitySchema({
             default: true,
             comment: "El vehículo está disponible para clases",
         },
+        requiereMantenimiento: {
+            type: Boolean,
+            default: false,
+            comment: "El vehículo tiene un reporte de mantenimiento pendiente",
+        },
+        comentarioMantenimiento: {
+            type: String,
+            nullable: true,
+            comment: "Comentario del instructor o secretaria sobre mantenimiento",
+        },
+        enMantenimiento: {
+            type: Boolean,
+            default: false,
+            comment: "El vehículo está fuera de servicio por mantenimiento",
+        },
         createdAt: {
             type: "timestamp",
             default: () => "CURRENT_TIMESTAMP",

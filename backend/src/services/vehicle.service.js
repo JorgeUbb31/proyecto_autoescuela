@@ -1,5 +1,6 @@
 "use strict";
 import { AppDataSource } from "../config/configDb.js";
+import { mapVehicle, mapVehicles } from "./response.mapper.js";
 
 /**
  * Crea un nuevo vehículo
@@ -29,7 +30,7 @@ export async function createVehicle(vehicleData) {
 
   await vehicleRepository.save(newVehicle);
 
-  return newVehicle;
+  return mapVehicle(newVehicle);
 }
 
 /**
@@ -41,24 +42,12 @@ export async function getAllVehicles(userRole = null) {
     relations: ["instructores"],
   });
 
-  // Si el usuario es secretaria, solo mostrar vehículos disponibles
-  if (userRole === "secretaria") {
-    return vehicles
-      .filter((v) => v.disponible)
-      .map((v) => ({
-        id: v.id,
-        matricula: v.matricula,
-        marca: v.marca,
-        modelo: v.modelo,
-        ano: v.ano,
-        tipo: v.tipo,
-        transmision: v.transmision,
-        disponible: v.disponible,
-        instructoresAsignados: v.instructores.map((i) => i.id),
-      }));
-  }
+  const mappedVehicles = mapVehicles(
+    vehicles.filter((vehicle) => (userRole === "secretaria" ? vehicle.disponible : true)),
+    userRole
+  );
 
-  return vehicles;
+  return mappedVehicles;
 }
 
 /**
@@ -76,7 +65,7 @@ export async function getVehicleById(vehicleId) {
     throw new Error("Vehículo no encontrado.");
   }
 
-  return vehicle;
+  return mapVehicle(vehicle);
 }
 
 /**
@@ -110,7 +99,7 @@ export async function updateVehicle(vehicleId, updateData) {
 
   await vehicleRepository.save(updatedVehicle);
 
-  return updatedVehicle;
+  return mapVehicle(updatedVehicle);
 }
 
 /**
@@ -129,7 +118,36 @@ export async function deleteVehicle(vehicleId) {
 
   await vehicleRepository.remove(vehicle);
 
-  return vehicle;
+  return mapVehicle(vehicle);
+}
+
+export async function updateMaintenance(vehicleId, maintenanceData, userRole) {
+  const vehicleRepository = AppDataSource.getRepository("Vehiculo");
+
+  const vehicle = await vehicleRepository.findOne({
+    where: { id: vehicleId },
+  });
+
+  if (!vehicle) {
+    throw new Error("Vehículo no encontrado.");
+  }
+
+  if (userRole === "secretaria" || userRole === "administrador") {
+    const shouldBeInMaintenance = maintenanceData.enMantenimiento === true;
+    vehicle.enMantenimiento = shouldBeInMaintenance;
+    vehicle.requiereMantenimiento = shouldBeInMaintenance;
+    vehicle.comentarioMantenimiento = maintenanceData.comentarioMantenimiento || vehicle.comentarioMantenimiento;
+    vehicle.disponible = !shouldBeInMaintenance;
+  } else if (userRole === "instructor" || userRole === "profesor") {
+    vehicle.requiereMantenimiento = maintenanceData.requiereMantenimiento !== false;
+    vehicle.comentarioMantenimiento = maintenanceData.comentarioMantenimiento || vehicle.comentarioMantenimiento;
+    vehicle.enMantenimiento = false;
+    vehicle.disponible = false;
+  }
+
+  await vehicleRepository.save(vehicle);
+
+  return mapVehicle(vehicle);
 }
 
 /**
