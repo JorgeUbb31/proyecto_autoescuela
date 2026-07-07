@@ -30,6 +30,13 @@ export default function Sidebar() {
       ]
     }
 
+    if (usuario?.role === 'usuario') {
+      return [
+        ...baseMenu,
+        { path: '/licenses', label: 'Mis Licencias' },
+      ]
+    }
+
     if (usuario?.role === 'secretaria') {
       return [
         ...baseMenu,

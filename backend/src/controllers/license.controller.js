@@ -13,6 +13,8 @@ export async function createLicense(req, res) {
     // Agregar ruta de imagen si existe
     const licenseData = {
       ...req.body,
+      userId: req.body.userId ?? req.user?.id,
+      activa: req.body.activa ?? false,
       imagenRuta: req.file ? req.file.filename : null,
     };
 
@@ -43,7 +45,7 @@ export async function createLicense(req, res) {
 
 export async function getLicenses(req, res) {
   try {
-    const licenses = await licenseService.getAllLicenses(req.user.role);
+    const licenses = await licenseService.getAllLicenses(req.user.role, req.user);
 
     res.status(200).json({ message: "Licencias encontradas", data: licenses });
   } catch (error) {
@@ -59,7 +61,7 @@ export async function getLicenseById(req, res) {
     if (isNaN(licenseId))
       return res.status(400).json({ message: "ID inválido" });
 
-    const license = await licenseService.getLicenseById(licenseId, req.user.role);
+    const license = await licenseService.getLicenseById(licenseId, req.user.role, req.user);
 
     res.status(200).json({ message: "Licencia encontrada", data: license });
   } catch (error) {

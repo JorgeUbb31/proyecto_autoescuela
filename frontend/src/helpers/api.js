@@ -1,9 +1,19 @@
 /**
  * Cliente HTTP para comunicación con el servidor
- * Maneja tokens JWT y errores comunes
+ * Usa Axios con interceptores para JWT, manejo de errores y tokens
  */
 
+import axios from 'axios'
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+
+// Crear instancia de Axios
+const axiosInstance = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
 
 class APIClient {
   /**
@@ -35,110 +45,106 @@ class APIClient {
   }
 
   /**
-   * Construye los headers comunes para las peticiones
+   * Interceptor de petición: Agregar token a headers
    */
-  construirHeaders(incluirToken = true) {
-    const headers = {
-      'Content-Type': 'application/json',
-    }
+  inicializarInterceptores() {
+    axiosInstance.interceptors.request.use(
+      (config) => {
+        const token = this.obtenerToken()
+        if (token && config.url !== '/auth/login' && config.url !== '/auth/register') {
+          config.headers.Authorization = `Bearer ${token}`
+        }
+        return config
+      },
+      (error) => Promise.reject(error)
+    )
 
-    if (incluirToken) {
-      const token = this.obtenerToken()
-      if (token) {
-        headers.Authorization = `Bearer ${token}`
+    // Interceptor de respuesta: Manejar errores y tokens expirados
+    axiosInstance.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        // Token expirado o no autorizado
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          this.eliminarToken()
+          window.location.href = '/login'
+          return Promise.reject(new Error('Sesión expirada. Por favor inicia sesión nuevamente.'))
+        }
+
+        // Errores del servidor o cliente
+        const mensaje = error.response?.data?.message || error.message || 'Error en la solicitud'
+        return Promise.reject(new Error(mensaje))
       }
-    }
-
-    return headers
+    )
   }
 
   /**
    * Realiza una petición GET
    */
-  async get(url, incluirToken = true) {
+  async get(url) {
     try {
-      const respuesta = await fetch(`${API_URL}${url}`, {
-        method: 'GET',
-        headers: this.construirHeaders(incluirToken),
-      })
-
-      return this.procesarRespuesta(respuesta)
+      const response = await axiosInstance.get(url)
+      return response.data
     } catch (error) {
-      throw new Error(`Error en GET ${url}: ${error.message}`)
+      throw error
     }
   }
 
   /**
    * Realiza una petición POST
    */
-  async post(url, datos = {}, incluirToken = true) {
+  async post(url, datos = {}) {
     try {
-      const respuesta = await fetch(`${API_URL}${url}`, {
-        method: 'POST',
-        headers: this.construirHeaders(incluirToken),
-        body: JSON.stringify(datos),
-      })
-
-      return this.procesarRespuesta(respuesta)
+      const response = await axiosInstance.post(url, datos)
+      return response.data
     } catch (error) {
-      throw new Error(`Error en POST ${url}: ${error.message}`)
+      throw error
     }
   }
 
   /**
    * Realiza una petición PUT
    */
-  async put(url, datos = {}, incluirToken = true) {
+  async put(url, datos = {}) {
     try {
-      const respuesta = await fetch(`${API_URL}${url}`, {
-        method: 'PUT',
-        headers: this.construirHeaders(incluirToken),
-        body: JSON.stringify(datos),
-      })
-
-      return this.procesarRespuesta(respuesta)
+      const response = await axiosInstance.put(url, datos)
+      return response.data
     } catch (error) {
-      throw new Error(`Error en PUT ${url}: ${error.message}`)
+      throw error
     }
   }
 
   /**
    * Realiza una petición DELETE
    */
-  async delete(url, incluirToken = true) {
+  async delete(url) {
     try {
-      const respuesta = await fetch(`${API_URL}${url}`, {
-        method: 'DELETE',
-        headers: this.construirHeaders(incluirToken),
-      })
-
-      return this.procesarRespuesta(respuesta)
+      const response = await axiosInstance.delete(url)
+      return response.data
     } catch (error) {
-      throw new Error(`Error en DELETE ${url}: ${error.message}`)
+      throw error
     }
   }
 
   /**
-   * Procesa la respuesta del servidor
-   * Lanza errores para códigos 4xx y 5xx
+   * Sube un archivo (FormData)
    */
-  async procesarRespuesta(respuesta) {
-    const datos = await respuesta.json()
-
-    // Token expirado o inválido
-    if (respuesta.status === 401 || respuesta.status === 403) {
-      this.eliminarToken()
-      window.location.href = '/login'
-      throw new Error(datos.message || 'No autorizado')
+  async uploadFile(url, formData) {
+    try {
+      const response = await axiosInstance.post(url, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+      return response.data
+    } catch (error) {
+      throw error
     }
-
-    // Error del servidor o cliente
-    if (!respuesta.ok) {
-      throw new Error(datos.message || `Error ${respuesta.status}`)
-    }
-
-    return datos
   }
 }
 
-export default new APIClient()
+// Crear instancia y inicializar interceptores
+const apiClient = new APIClient()
+apiClient.inicializarInterceptores()
+
+export default apiClient
+

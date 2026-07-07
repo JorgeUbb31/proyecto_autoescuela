@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth.js'
+import { useUsers } from '../hooks/useUsers.js'
 import Navbar from '../components/Navbar.jsx'
 import Sidebar from '../components/Sidebar.jsx'
 import Table from '../components/Table.jsx'
@@ -7,19 +8,16 @@ import Modal from '../components/Modal.jsx'
 import Form from '../components/Form.jsx'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal.jsx'
 import AccessDenied from '../components/AccessDenied.jsx'
-import * as userService from '../services/userService.js'
 import '../styles/dashboard.css'
 
 export default function UsersPage() {
   const { usuario } = useAuth()
-  const [users, setUsers] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const { users, loading, error, submitLoading, fetchUsers, createUser, updateUser, deleteUser, setError } = useUsers()
+  
   const [rolFilter, setRolFilter] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
-  const [submitLoading, setSubmitLoading] = useState(false)
   const [hasAccess, setHasAccess] = useState(true)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [userToDelete, setUserToDelete] = useState(null)
@@ -37,38 +35,18 @@ export default function UsersPage() {
     fetchUsers()
   }, [usuario])
 
-  const fetchUsers = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const token = localStorage.getItem('accessToken')
-      const usersArray = await userService.fetchUsers(token)
-      setUsers(usersArray)
-    } catch (err) {
-      setError(err.message)
-      setUsers([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleEdit = (user) => {
     setEditingUser(user)
     setIsEditModalOpen(true)
   }
 
   const handleUpdateUser = async (formData) => {
-    setSubmitLoading(true)
     try {
-      const token = localStorage.getItem('accessToken')
-      await userService.updateUser(token, editingUser.id, formData)
+      await updateUser(editingUser.id, formData)
       setIsEditModalOpen(false)
       setEditingUser(null)
-      fetchUsers()
     } catch (err) {
       throw err
-    } finally {
-      setSubmitLoading(false)
     }
   }
 
@@ -81,11 +59,8 @@ export default function UsersPage() {
     if (!userToDelete) return
     
     setIsDeleting(true)
-    setError('')
     try {
-      const token = localStorage.getItem('accessToken')
-      await userService.deleteUser(token, userToDelete.id)
-      setUsers(users.filter((u) => u.id !== userToDelete.id))
+      await deleteUser(userToDelete.id)
       setIsDeleteModalOpen(false)
       setUserToDelete(null)
     } catch (err) {
@@ -102,16 +77,11 @@ export default function UsersPage() {
   }
 
   const handleCreateUser = async (formData) => {
-    setSubmitLoading(true)
     try {
-      const token = localStorage.getItem('accessToken')
-      await userService.createUser(token, formData)
+      await createUser(formData)
       setIsModalOpen(false)
-      fetchUsers()
     } catch (err) {
       throw err
-    } finally {
-      setSubmitLoading(false)
     }
   }
 

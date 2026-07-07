@@ -6,6 +6,7 @@ import {
   getVehicleById,
   updateVehicle,
   deleteVehicle,
+  updateMaintenance,
   assignVehicleToInstructor,
   removeVehicleFromInstructor,
 } from "../controllers/vehicle.controller.js";
@@ -23,6 +24,8 @@ router.get("/", getVehicles);
 router.get("/:id", getVehicleById);
 
 router.put("/:id", isAdmin, updateVehicle);
+
+router.post("/:id/maintenance", updateMaintenance);
 
 router.delete("/:id", isAdmin, deleteVehicle);
 

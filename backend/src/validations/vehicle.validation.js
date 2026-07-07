@@ -80,6 +80,22 @@ export const createVehicleValidation = Joi.object({
   });
 
 
+export const maintenanceVehicleValidation = Joi.object({
+  comentarioMantenimiento: Joi.string().max(500).messages({
+    "string.max": "El comentario no puede exceder 500 caracteres.",
+  }),
+  requiereMantenimiento: Joi.boolean().messages({
+    "boolean.base": "El estado de mantenimiento debe ser un valor booleano.",
+  }),
+  enMantenimiento: Joi.boolean().messages({
+    "boolean.base": "La decisión de mantenimiento debe ser un valor booleano.",
+  }),
+})
+  .unknown(false)
+  .messages({
+    "object.unknown": "No se permiten campos adicionales",
+  });
+
 export const updateVehicleValidation = Joi.object({
   matricula: Joi.string()
     .pattern(/^[A-Z]{2}[A-Z0-9]{4}[0-9]{2}$|^[A-Z]{2}\s?[A-Z0-9]{4}\s?[0-9]{2}$/)

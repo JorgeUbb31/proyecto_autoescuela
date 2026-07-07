@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth.js'
+import { useVehicles } from '../hooks/useVehicles.js'
 import Navbar from '../components/Navbar.jsx'
 import Sidebar from '../components/Sidebar.jsx'
 import Table from '../components/Table.jsx'
@@ -7,39 +8,26 @@ import Modal from '../components/Modal.jsx'
 import Form from '../components/Form.jsx'
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal.jsx'
 import '../styles/dashboard.css'
-import * as vehicleService from '../services/vehicleService.js'
 
 export default function VehiclesPage() {
   const { usuario } = useAuth()
-  const [vehicles, setVehicles] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const { vehicles, loading, error, submitLoading, fetchVehicles, createVehicle, updateVehicle, updateMaintenance, deleteVehicle, setError } = useVehicles()
+  
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editingVehicle, setEditingVehicle] = useState(null)
-  const [submitLoading, setSubmitLoading] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [vehicleToDelete, setVehicleToDelete] = useState(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [maintenanceModalOpen, setMaintenanceModalOpen] = useState(false)
+  const [selectedVehicle, setSelectedVehicle] = useState(null)
+  const [maintenanceComment, setMaintenanceComment] = useState('')
+  const [maintenanceDecision, setMaintenanceDecision] = useState(false)
+  const [maintenanceSubmitting, setMaintenanceSubmitting] = useState(false)
 
   useEffect(() => {
     fetchVehicles()
   }, [usuario])
-
-  const fetchVehicles = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const token = localStorage.getItem('accessToken')
-      const vehiclesArray = await vehicleService.fetchVehicles(token)
-      setVehicles(vehiclesArray)
-    } catch (err) {
-      setError(err.message)
-      setVehicles([])
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleEdit = (vehicle) => {
     setEditingVehicle(vehicle)
@@ -47,31 +35,21 @@ export default function VehiclesPage() {
   }
 
   const handleUpdateVehicle = async (formData) => {
-    setSubmitLoading(true)
     try {
-      const token = localStorage.getItem('accessToken')
-      await vehicleService.updateVehicle(token, editingVehicle.id, formData)
+      await updateVehicle(editingVehicle.id, formData)
       setIsEditModalOpen(false)
       setEditingVehicle(null)
-      fetchVehicles()
     } catch (err) {
       throw err
-    } finally {
-      setSubmitLoading(false)
     }
   }
 
   const handleCreateVehicle = async (formData) => {
-    setSubmitLoading(true)
     try {
-      const token = localStorage.getItem('accessToken')
-      await vehicleService.createVehicle(token, formData)
+      await createVehicle(formData)
       setIsModalOpen(false)
-      fetchVehicles()
     } catch (err) {
       throw err
-    } finally {
-      setSubmitLoading(false)
     }
   }
 
@@ -84,11 +62,8 @@ export default function VehiclesPage() {
     if (!vehicleToDelete) return
     
     setIsDeleting(true)
-    setError('')
     try {
-      const token = localStorage.getItem('accessToken')
-      await vehicleService.deleteVehicle(token, vehicleToDelete.id)
-      setVehicles(vehicles.filter((v) => v.id !== vehicleToDelete.id))
+      await deleteVehicle(vehicleToDelete.id)
       setIsDeleteModalOpen(false)
       setVehicleToDelete(null)
     } catch (err) {
@@ -102,6 +77,37 @@ export default function VehiclesPage() {
   const handleCancelDelete = () => {
     setIsDeleteModalOpen(false)
     setVehicleToDelete(null)
+  }
+
+  const openMaintenanceModal = (vehicle) => {
+    setSelectedVehicle(vehicle)
+    setMaintenanceComment(vehicle.comentarioMantenimiento || '')
+    setMaintenanceDecision(vehicle.enMantenimiento || false)
+    setMaintenanceModalOpen(true)
+  }
+
+  const handleMaintenanceSubmit = async (event) => {
+    event.preventDefault()
+    if (!selectedVehicle) return
+
+    setMaintenanceSubmitting(true)
+    try {
+      const payload = {
+        comentarioMantenimiento: maintenanceComment,
+        requiereMantenimiento: usuario?.role === 'instructor' || usuario?.role === 'profesor' ? true : undefined,
+        enMantenimiento: usuario?.role === 'secretaria' || usuario?.role === 'administrador' ? maintenanceDecision : false,
+      }
+      await updateMaintenance(selectedVehicle.id, payload)
+      setMaintenanceModalOpen(false)
+      setSelectedVehicle(null)
+      setMaintenanceComment('')
+      setMaintenanceDecision(false)
+    } catch (err) {
+      setError(err.message)
+      console.error('Error al actualizar mantenimiento:', err)
+    } finally {
+      setMaintenanceSubmitting(false)
+    }
   }
 
   const columns = [
@@ -118,7 +124,18 @@ export default function VehiclesPage() {
         <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
           row.disponible ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'
         }`}>
-          {row.disponible ? 'Disponible' : 'En Uso'}
+          {row.disponible ? 'Disponible' : 'No disponible'}
+        </span>
+      )
+    },
+    {
+      key: 'estadoMantenimiento',
+      label: 'Mantenimiento',
+      render: (row) => (
+        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+          row.enMantenimiento ? 'bg-red-200 text-red-800' : row.requiereMantenimiento ? 'bg-orange-200 text-orange-800' : 'bg-gray-200 text-gray-800'
+        }`}>
+          {row.estadoMantenimiento || 'Sin reporte'}
         </span>
       )
     },
@@ -164,6 +181,24 @@ export default function VehiclesPage() {
               onEdit={usuario?.role === 'administrador' ? handleEdit : null}
               onDelete={usuario?.role === 'administrador' ? handleDelete : null}
             />
+
+            {(usuario?.role === 'instructor' || usuario?.role === 'profesor' || usuario?.role === 'secretaria' || usuario?.role === 'administrador') && (
+              <div className="mt-6 border-t pt-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">Acciones rápidas</h3>
+                <p className="text-sm text-gray-600 mb-4">Los instructores pueden reportar mantenimiento y la secretaria puede decidir si el vehículo entra a mantenimiento.</p>
+                <div className="flex flex-wrap gap-3">
+                  {vehicles.slice(0, 3).map((vehicle) => (
+                    <button
+                      key={vehicle.id}
+                      onClick={() => openMaintenanceModal(vehicle)}
+                      className="px-4 py-2 rounded-lg bg-primary text-white hover:bg-secondary"
+                    >
+                      {vehicle.matricula}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </main>
       </div>
@@ -265,6 +300,41 @@ export default function VehiclesPage() {
         onCancel={handleCancelDelete}
         isLoading={isDeleting}
       />
+
+      <Modal isOpen={maintenanceModalOpen} title="Mantenimiento del vehículo" onClose={() => setMaintenanceModalOpen(false)}>
+        {selectedVehicle && (
+          <form onSubmit={handleMaintenanceSubmit} className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Vehículo: <span className="font-semibold">{selectedVehicle.matricula}</span>
+            </p>
+            <textarea
+              value={maintenanceComment}
+              onChange={(e) => setMaintenanceComment(e.target.value)}
+              rows={4}
+              className="input-field w-full"
+              placeholder="Describe el problema o comentario de mantenimiento"
+            />
+            {(usuario?.role === 'secretaria' || usuario?.role === 'administrador') && (
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={maintenanceDecision}
+                  onChange={(e) => setMaintenanceDecision(e.target.checked)}
+                />
+                Enviar a mantenimiento y quitar de servicio
+              </label>
+            )}
+            <div className="flex justify-end gap-3">
+              <button type="button" onClick={() => setMaintenanceModalOpen(false)} className="px-4 py-2 rounded-lg border">
+                Cancelar
+              </button>
+              <button type="submit" disabled={maintenanceSubmitting} className="btn-primary disabled:opacity-50">
+                {maintenanceSubmitting ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   )
 }

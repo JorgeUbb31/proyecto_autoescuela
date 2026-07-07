@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 
 export async function fetchVehicles(token) {
   const response = await fetch(`${API_URL}/vehicles`, {
@@ -62,6 +62,24 @@ export async function deleteVehicle(token, vehicleId) {
   if (!response.ok) {
     const errorData = await response.json()
     throw new Error(errorData.message || 'Error al eliminar vehículo')
+  }
+
+  return await response.json()
+}
+
+export async function updateMaintenance(token, vehicleId, payload) {
+  const response = await fetch(`${API_URL}/vehicles/${vehicleId}/maintenance`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json()
+    throw new Error(errorData.message || 'Error al actualizar mantenimiento')
   }
 
   return await response.json()

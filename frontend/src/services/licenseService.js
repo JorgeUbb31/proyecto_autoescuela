@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 
 export async function fetchLicenses(token) {
   const response = await fetch(`${API_URL}/licenses`, {
@@ -20,10 +20,13 @@ export async function createLicense(token, formData) {
   const data = new FormData()
   
   if (formData.instructorId) data.append('instructorId', formData.instructorId)
+  if (formData.userId) data.append('userId', formData.userId)
   if (formData.numeroLicencia) data.append('numeroLicencia', formData.numeroLicencia)
   if (formData.tipoLicencia) data.append('tipoLicencia', formData.tipoLicencia)
   if (formData.categoria) data.append('categoria', formData.categoria)
+  if (formData.fechaEmision) data.append('fechaEmision', formData.fechaEmision)
   if (formData.fechaVencimiento) data.append('fechaVencimiento', formData.fechaVencimiento)
+  if (formData.activa !== undefined) data.append('activa', formData.activa ? 'true' : 'false')
   if (formData.imagenRuta && formData.imagenRuta instanceof File) {
     data.append('imagenRuta', formData.imagenRuta)
   }
