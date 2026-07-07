@@ -69,6 +69,11 @@ export const VehicleEntity = new EntitySchema({
             nullable: true,
             comment: "Comentario del instructor o secretaria sobre mantenimiento",
         },
+        nivelVencina: {
+            type: String,
+            nullable: true,
+            comment: "Nivel de vencina o estado de desgaste del vehículo",
+        },
         enMantenimiento: {
             type: Boolean,
             default: false,

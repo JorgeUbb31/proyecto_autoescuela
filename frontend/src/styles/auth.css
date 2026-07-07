@@ -1,4 +1,4 @@
-/* Estilos de autenticación con Tailwind CSS y animaciones */
+/* Estilos de autenticación con identidad Terra */
 
 @keyframes slideDown {
   from {
@@ -32,29 +32,60 @@
 }
 
 .auth-container {
-  @apply flex justify-center items-center min-h-screen bg-gradient-to-br from-primary to-secondary px-4;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(200, 158, 115, 0.2), transparent 30%),
+    linear-gradient(135deg, rgba(200, 158, 115, 0.18) 0%, rgba(93, 64, 55, 0.96) 100%);
   animation: fadeIn 0.6s ease-out;
 }
 
 .auth-card {
-  @apply bg-white rounded-lg shadow-xl p-8 w-full max-w-md;
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  padding: 40px 36px;
+  border-radius: 20px;
+  border: 1px solid rgba(93, 64, 55, 0.08);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 24px 60px rgba(93, 64, 55, 0.16);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
   animation: slideUp 0.5s ease-out;
+  overflow: hidden;
+}
+
+.auth-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, #C89E73 0%, rgba(200, 158, 115, 0.25) 100%);
 }
 
 .auth-card h1 {
-  @apply text-center text-primary mb-2 text-3xl font-bold;
+  margin-bottom: 8px;
+  text-align: center;
+  font-size: 30px;
+  font-weight: 700;
+  color: #C89E73;
   animation: slideDown 0.5s ease-out;
 }
 
 .auth-card h2 {
-  @apply text-center text-gray-900 mb-6 text-xl font-semibold;
+  margin-bottom: 24px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f1714;
   animation: slideDown 0.5s ease-out 0.1s both;
 }
 
 .form-group {
-  @apply mb-4;
+  margin-bottom: 16px;
   animation: slideUp 0.5s ease-out;
 }
 
@@ -65,37 +96,68 @@
 .form-group:nth-child(6) { animation-delay: 0.5s; }
 
 .form-group label {
-  @apply block mb-2 font-semibold text-gray-800 text-sm transition-colors duration-300;
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f1714;
+  transition: color 200ms ease;
 }
 
 .form-group input {
-  @apply w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-primary focus:ring-0 transition-all duration-300 bg-white hover:border-gray-400;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #e4e2dd;
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.95);
+  color: #1f1714;
+  transition: all 200ms ease;
+  box-shadow: inset 0 1px 2px rgba(93, 64, 55, 0.04);
+}
+
+.form-group input:hover {
+  border-color: #d4a574;
 }
 
 .form-group input:focus {
-  box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.2);
+  outline: none;
+  border-color: #C89E73;
+  box-shadow: 0 0 0 3px rgba(200, 158, 115, 0.2);
 }
 
 .form-group input::placeholder {
-  @apply text-gray-400;
+  color: rgba(31, 23, 20, 0.5);
 }
 
 .form-group input:disabled {
-  @apply bg-gray-100 cursor-not-allowed;
+  background-color: #f5efe9;
+  cursor: not-allowed;
 }
 
 .auth-footer {
-  @apply text-center mt-6 pt-6 border-t border-gray-200;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #ece5de;
+  text-align: center;
   animation: slideUp 0.5s ease-out 0.6s both;
 }
 
 .auth-footer p {
-  @apply text-gray-600 text-sm;
+  color: #6f625b;
+  font-size: 14px;
 }
 
 .auth-footer a {
-  @apply text-primary font-semibold transition-all duration-300 hover:text-secondary hover:underline hover:scale-105;
+  color: #C89E73;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 200ms ease;
+}
+
+.auth-footer a:hover {
+  color: #5D4037;
+  text-decoration: underline;
+  transform: scale(1.02);
 }
 
 

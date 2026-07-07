@@ -1,4 +1,4 @@
-export default function Table({ columns, data, onEdit, onDelete, loading }) {
+export default function Table({ columns, data, onEdit, onDelete, renderActions, loading }) {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -18,6 +18,8 @@ export default function Table({ columns, data, onEdit, onDelete, loading }) {
     )
   }
 
+  const showActionsColumn = onEdit || onDelete || renderActions
+
   return (
     <div className="overflow-x-auto shadow-md rounded-lg">
       <table className="w-full bg-white">
@@ -28,7 +30,7 @@ export default function Table({ columns, data, onEdit, onDelete, loading }) {
                 {column.label}
               </th>
             ))}
-            {(onEdit || onDelete) && (
+            {showActionsColumn && (
               <th className="px-6 py-4 text-center font-semibold">Acciones</th>
             )}
           </tr>
@@ -44,9 +46,9 @@ export default function Table({ columns, data, onEdit, onDelete, loading }) {
                   {column.render ? column.render(row) : row[column.key]}
                 </td>
               ))}
-              {(onEdit || onDelete) && (
+              {showActionsColumn && (
                 <td className="px-6 py-4 text-center">
-                  <div className="flex justify-center gap-2">
+                  <div className="flex flex-wrap justify-center gap-2">
                     {onEdit && (
                       <button
                         onClick={() => onEdit(row)}
@@ -57,12 +59,13 @@ export default function Table({ columns, data, onEdit, onDelete, loading }) {
                     )}
                     {onDelete && (
                       <button
-                        onClick={() => onDelete(row.id)}
+                        onClick={() => onDelete(row)}
                         className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors duration-200 text-sm font-semibold"
                       >
                         Eliminar
                       </button>
                     )}
+                    {renderActions && renderActions(row)}
                   </div>
                 </td>
               )}

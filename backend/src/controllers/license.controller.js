@@ -5,17 +5,53 @@ import {
 } from "../validations/license.validation.js";
 import * as licenseService from "../services/license.service.js";
 
+function resolveLicenseImageValue(req) {
+  const bodyValue = req.body?.imagenRuta ?? req.body?.imagen ?? null;
+
+  if (typeof bodyValue === "string" && bodyValue.trim()) {
+    return bodyValue.trim();
+  }
+
+  const uploadedFile = req.files?.imagen?.[0] || req.files?.imagenRuta?.[0] || req.file;
+  if (uploadedFile?.filename) {
+    return uploadedFile.filename;
+  }
+
+  return null;
+}
+
+function normalizeLicensePayload(req) {
+  const payload = { ...req.body };
+
+  if (payload.activa !== undefined) {
+    if (payload.activa === "true") payload.activa = true;
+    else if (payload.activa === "false") payload.activa = false;
+  }
+
+  if (payload.fechaEmision && typeof payload.fechaEmision === "string") {
+    payload.fechaEmision = new Date(payload.fechaEmision);
+  }
+
+  if (payload.fechaVencimiento && typeof payload.fechaVencimiento === "string") {
+    payload.fechaVencimiento = new Date(payload.fechaVencimiento);
+  }
+
+  return payload;
+}
+
 export async function createLicense(req, res) {
   try {
-    const { error } = createLicenseValidation.validate(req.body);
+    const normalizedBody = normalizeLicensePayload(req);
+    const { error } = createLicenseValidation.validate(normalizedBody);
     if (error) return res.status(400).json({ message: error.details[0].message });
 
-    // Agregar ruta de imagen si existe
+    const imageValue = resolveLicenseImageValue(req);
+
     const licenseData = {
-      ...req.body,
-      userId: req.body.userId ?? req.user?.id,
-      activa: req.body.activa ?? false,
-      imagenRuta: req.file ? req.file.filename : null,
+      ...normalizedBody,
+      userId: normalizedBody.userId ?? req.user?.id,
+      activa: normalizedBody.activa ?? false,
+      imagenRuta: imageValue,
     };
 
     const newLicense = await licenseService.createLicense(licenseData);
@@ -81,13 +117,20 @@ export async function getLicenseById(req, res) {
 export async function updateLicense(req, res) {
   try {
     const licenseId = parseInt(req.params.id);
-    const { error } = updateLicenseValidation.validate(req.body);
+    const normalizedBody = normalizeLicensePayload(req);
+    const { error } = updateLicenseValidation.validate(normalizedBody);
     if (error) return res.status(400).json({ message: error.details[0].message });
 
     if (isNaN(licenseId))
       return res.status(400).json({ message: "ID inválido" });
 
-    const updatedLicense = await licenseService.updateLicense(licenseId, req.body);
+    const imageValue = resolveLicenseImageValue(req);
+    const updateData = {
+      ...normalizedBody,
+      ...(imageValue !== null ? { imagenRuta: imageValue } : {}),
+    };
+
+    const updatedLicense = await licenseService.updateLicense(licenseId, updateData);
 
     res.status(200).json({
       message: "Licencia actualizada correctamente",

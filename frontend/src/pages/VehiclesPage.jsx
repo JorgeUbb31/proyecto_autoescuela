@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth.js'
 import { useVehicles } from '../hooks/useVehicles.js'
+import * as instructorService from '../services/instructorService.js'
+import * as vehicleService from '../services/vehicleService.js'
 import Navbar from '../components/Navbar.jsx'
 import Sidebar from '../components/Sidebar.jsx'
 import Table from '../components/Table.jsx'
@@ -12,6 +14,10 @@ import '../styles/dashboard.css'
 export default function VehiclesPage() {
   const { usuario } = useAuth()
   const { vehicles, loading, error, submitLoading, fetchVehicles, createVehicle, updateVehicle, updateMaintenance, deleteVehicle, setError } = useVehicles()
+  const [instructors, setInstructors] = useState([])
+  const [assignModalOpen, setAssignModalOpen] = useState(false)
+  const [vehicleToAssign, setVehicleToAssign] = useState(null)
+  const [selectedInstructorId, setSelectedInstructorId] = useState('')
   
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -22,12 +28,51 @@ export default function VehiclesPage() {
   const [maintenanceModalOpen, setMaintenanceModalOpen] = useState(false)
   const [selectedVehicle, setSelectedVehicle] = useState(null)
   const [maintenanceComment, setMaintenanceComment] = useState('')
+  const [maintenanceLevel, setMaintenanceLevel] = useState('')
   const [maintenanceDecision, setMaintenanceDecision] = useState(false)
   const [maintenanceSubmitting, setMaintenanceSubmitting] = useState(false)
 
   useEffect(() => {
     fetchVehicles()
   }, [usuario])
+
+  useEffect(() => {
+    async function loadInstructors() {
+      if (usuario?.role !== 'administrador') return
+      try {
+        const token = localStorage.getItem('accessToken')
+        const instructorsArray = await instructorService.fetchInstructors(token)
+        setInstructors(instructorsArray)
+      } catch (err) {
+        console.error('Error al cargar instructores para asignación:', err)
+      }
+    }
+
+    loadInstructors()
+  }, [usuario])
+
+  const openAssignModal = (vehicle) => {
+    setVehicleToAssign(vehicle)
+    setSelectedInstructorId(vehicle.instructores?.[0]?.id || '')
+    setAssignModalOpen(true)
+  }
+
+  const handleAssignVehicle = async (event) => {
+    event.preventDefault()
+    if (!vehicleToAssign || !selectedInstructorId) return
+
+    try {
+      const token = localStorage.getItem('accessToken')
+      await vehicleService.assignVehicleToInstructor(token, vehicleToAssign.id, selectedInstructorId)
+      await fetchVehicles()
+      setAssignModalOpen(false)
+      setVehicleToAssign(null)
+      setSelectedInstructorId('')
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }
 
   const handleEdit = (vehicle) => {
     setEditingVehicle(vehicle)
@@ -82,6 +127,7 @@ export default function VehiclesPage() {
   const openMaintenanceModal = (vehicle) => {
     setSelectedVehicle(vehicle)
     setMaintenanceComment(vehicle.comentarioMantenimiento || '')
+    setMaintenanceLevel(vehicle.nivelVencina || '')
     setMaintenanceDecision(vehicle.enMantenimiento || false)
     setMaintenanceModalOpen(true)
   }
@@ -94,6 +140,7 @@ export default function VehiclesPage() {
     try {
       const payload = {
         comentarioMantenimiento: maintenanceComment,
+        nivelVencina: maintenanceLevel,
         requiereMantenimiento: usuario?.role === 'instructor' || usuario?.role === 'profesor' ? true : undefined,
         enMantenimiento: usuario?.role === 'secretaria' || usuario?.role === 'administrador' ? maintenanceDecision : false,
       }
@@ -101,6 +148,7 @@ export default function VehiclesPage() {
       setMaintenanceModalOpen(false)
       setSelectedVehicle(null)
       setMaintenanceComment('')
+      setMaintenanceLevel('')
       setMaintenanceDecision(false)
     } catch (err) {
       setError(err.message)
@@ -117,6 +165,17 @@ export default function VehiclesPage() {
     { key: 'modelo', label: 'Modelo' },
     { key: 'ano', label: 'Año' },
     { key: 'transmision', label: 'Transmisión' },
+    {
+      key: 'instructores',
+      label: 'Instructor(es)',
+      render: (row) => (
+        <span className="text-sm text-gray-700">
+          {Array.isArray(row.instructores) && row.instructores.length > 0
+            ? row.instructores.map((instructor) => instructor.nombre || instructor.rut).join(', ')
+            : 'Sin asignar'}
+        </span>
+      ),
+    },
     { 
       key: 'disponible', 
       label: 'Disponibilidad',
@@ -125,6 +184,24 @@ export default function VehiclesPage() {
           row.disponible ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'
         }`}>
           {row.disponible ? 'Disponible' : 'No disponible'}
+        </span>
+      )
+    },
+    {
+      key: 'nivelVencina',
+      label: 'Vencina',
+      render: (row) => (
+        <span className="text-sm text-gray-700">
+          {row.nivelVencina || 'Sin registro'}
+        </span>
+      )
+    },
+    {
+      key: 'comentarioMantenimiento',
+      label: 'Comentario',
+      render: (row) => (
+        <span className="text-sm text-gray-700" title={row.comentarioMantenimiento || ''}>
+          {row.comentarioMantenimiento ? `${row.comentarioMantenimiento.slice(0, 40)}${row.comentarioMantenimiento.length > 40 ? '…' : ''}` : 'Sin comentarios'}
         </span>
       )
     },
@@ -154,13 +231,15 @@ export default function VehiclesPage() {
 
           {error && (
             <div className="alert alert-error mb-6">
-              <p>{error}</p>
-              <button
-                onClick={fetchVehicles}
-                className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-              >
-                Reintentar
-              </button>
+              <div className="flex-1">
+                <p className="font-semibold mb-2">{error}</p>
+                <button
+                  onClick={fetchVehicles}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                >
+                  Reintentar
+                </button>
+              </div>
             </div>
           )}
 
@@ -180,6 +259,14 @@ export default function VehiclesPage() {
               loading={loading}
               onEdit={usuario?.role === 'administrador' ? handleEdit : null}
               onDelete={usuario?.role === 'administrador' ? handleDelete : null}
+              renderActions={usuario?.role === 'administrador' ? (row) => (
+                <button
+                  onClick={() => openAssignModal(row)}
+                  className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200 text-sm font-semibold"
+                >
+                  Asignar
+                </button>
+              ) : null}
             />
 
             {(usuario?.role === 'instructor' || usuario?.role === 'profesor' || usuario?.role === 'secretaria' || usuario?.role === 'administrador') && (
@@ -209,15 +296,15 @@ export default function VehiclesPage() {
             { name: 'matricula', label: 'Matrícula', type: 'text', placeholder: 'ej: ABCD-1234', required: true },
             { name: 'marca', label: 'Marca', type: 'text', placeholder: 'ej: Toyota', required: true },
             { name: 'modelo', label: 'Modelo', type: 'text', placeholder: 'ej: Corolla', required: true },
-            { name: 'año', label: 'Año', type: 'number', placeholder: 'ej: 2023', required: true },
+            { name: 'ano', label: 'Año', type: 'number', placeholder: 'ej: 2023', required: true },
             { 
               name: 'tipo', 
               label: 'Tipo', 
               type: 'select',
               options: [
-                { value: 'auto', label: 'Auto' },
-                { value: 'camion', label: 'Camión' },
-                { value: 'moto', label: 'Moto' },
+                { value: 'AUTO', label: 'Auto' },
+                { value: 'CAMION', label: 'Camión' },
+                { value: 'MOTO', label: 'Moto' },
               ],
               required: true,
             },
@@ -226,12 +313,12 @@ export default function VehiclesPage() {
               label: 'Transmisión', 
               type: 'select',
               options: [
-                { value: 'manual', label: 'Manual' },
-                { value: 'automatica', label: 'Automática' },
+                { value: 'MANUAL', label: 'Manual' },
+                { value: 'AUTOMATICA', label: 'Automática' },
               ],
               required: true,
             },
-            { name: 'vencimiento_patente', label: 'Vencimiento de Patente', type: 'date', required: true },
+            { name: 'vencimientoPatente', label: 'Vencimiento de Patente', type: 'date', required: true },
             { 
               name: 'disponible', 
               label: 'Disponible', 
@@ -252,15 +339,15 @@ export default function VehiclesPage() {
               { name: 'matricula', label: 'Matrícula', type: 'text', placeholder: 'ej: ABCD-1234', required: true, defaultValue: editingVehicle.matricula },
               { name: 'marca', label: 'Marca', type: 'text', placeholder: 'ej: Toyota', required: true, defaultValue: editingVehicle.marca },
               { name: 'modelo', label: 'Modelo', type: 'text', placeholder: 'ej: Corolla', required: true, defaultValue: editingVehicle.modelo },
-              { name: 'año', label: 'Año', type: 'number', placeholder: 'ej: 2023', required: true, defaultValue: editingVehicle.año },
+              { name: 'ano', label: 'Año', type: 'number', placeholder: 'ej: 2023', required: true, defaultValue: editingVehicle.ano },
               { 
                 name: 'tipo', 
                 label: 'Tipo', 
                 type: 'select',
                 options: [
-                  { value: 'auto', label: 'Auto' },
-                  { value: 'camion', label: 'Camión' },
-                  { value: 'moto', label: 'Moto' },
+                  { value: 'AUTO', label: 'Auto' },
+                  { value: 'CAMION', label: 'Camión' },
+                  { value: 'MOTO', label: 'Moto' },
                 ],
                 required: true,
                 defaultValue: editingVehicle.tipo,
@@ -270,13 +357,13 @@ export default function VehiclesPage() {
                 label: 'Transmisión', 
                 type: 'select',
                 options: [
-                  { value: 'manual', label: 'Manual' },
-                  { value: 'automatica', label: 'Automática' },
+                  { value: 'MANUAL', label: 'Manual' },
+                  { value: 'AUTOMATICA', label: 'Automática' },
                 ],
                 required: true,
                 defaultValue: editingVehicle.transmision,
               },
-              { name: 'vencimiento_patente', label: 'Vencimiento de Patente', type: 'date', required: true, defaultValue: editingVehicle.vencimientoPatente },
+              { name: 'vencimientoPatente', label: 'Vencimiento de Patente', type: 'date', required: true, defaultValue: editingVehicle.vencimientoPatente },
               { 
                 name: 'disponible', 
                 label: 'Disponible', 
@@ -301,6 +388,38 @@ export default function VehiclesPage() {
         isLoading={isDeleting}
       />
 
+      <Modal isOpen={assignModalOpen} title="Asignar vehículo a instructor" onClose={() => setAssignModalOpen(false)}>
+        <form onSubmit={handleAssignVehicle} className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Vehículo: <span className="font-semibold">{vehicleToAssign?.matricula}</span>
+          </p>
+          <label className="block">
+            <span className="text-sm font-medium text-gray-700">Seleccionar instructor</span>
+            <select
+              value={selectedInstructorId}
+              onChange={(event) => setSelectedInstructorId(event.target.value)}
+              className="input-field w-full mt-2"
+              required
+            >
+              <option value="">Selecciona un instructor</option>
+              {instructors.map((instructor) => (
+                <option key={instructor.id} value={instructor.id}>
+                  {instructor.nombre || instructor.usuario?.username || instructor.rut}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex justify-end gap-3">
+            <button type="button" onClick={() => setAssignModalOpen(false)} className="px-4 py-2 rounded-lg border">
+              Cancelar
+            </button>
+            <button type="submit" className="btn-primary">
+              Asignar vehículo
+            </button>
+          </div>
+        </form>
+      </Modal>
+
       <Modal isOpen={maintenanceModalOpen} title="Mantenimiento del vehículo" onClose={() => setMaintenanceModalOpen(false)}>
         {selectedVehicle && (
           <form onSubmit={handleMaintenanceSubmit} className="space-y-4">
@@ -313,6 +432,13 @@ export default function VehiclesPage() {
               rows={4}
               className="input-field w-full"
               placeholder="Describe el problema o comentario de mantenimiento"
+            />
+            <input
+              type="text"
+              value={maintenanceLevel}
+              onChange={(e) => setMaintenanceLevel(e.target.value)}
+              className="input-field w-full"
+              placeholder="Nivel de vencina / estado del vehículo"
             />
             {(usuario?.role === 'secretaria' || usuario?.role === 'administrador') && (
               <label className="flex items-center gap-2 text-sm text-gray-700">

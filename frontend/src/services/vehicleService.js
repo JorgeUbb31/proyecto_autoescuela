@@ -84,3 +84,21 @@ export async function updateMaintenance(token, vehicleId, payload) {
 
   return await response.json()
 }
+
+export async function assignVehicleToInstructor(token, vehicleId, instructorId) {
+  const response = await fetch(`${API_URL}/vehicles/assign`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ vehicleId, instructorId }),
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json()
+    throw new Error(errorData.message || 'Error al asignar vehículo')
+  }
+
+  return await response.json()
+}

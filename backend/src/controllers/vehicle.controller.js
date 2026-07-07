@@ -35,7 +35,7 @@ export async function createVehicle(req, res) {
 
 export async function getVehicles(req, res) {
   try {
-    const vehicles = await vehicleService.getAllVehicles(req.user.role);
+    const vehicles = await vehicleService.getAllVehicles(req.user.role, req.user.id);
 
     res.status(200).json({ message: "Vehículos encontrados", data: vehicles });
   } catch (error) {

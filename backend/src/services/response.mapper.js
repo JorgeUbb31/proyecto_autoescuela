@@ -108,6 +108,7 @@ export function mapVehicle(vehicle, userRole = null) {
     disponible: vehicle.disponible,
     requiereMantenimiento: vehicle.requiereMantenimiento ?? false,
     comentarioMantenimiento: vehicle.comentarioMantenimiento ?? null,
+    nivelVencina: vehicle.nivelVencina ?? null,
     enMantenimiento: vehicle.enMantenimiento ?? false,
     estadoMantenimiento: vehicle.enMantenimiento
       ? "En mantenimiento"
@@ -133,6 +134,7 @@ export function mapVehicle(vehicle, userRole = null) {
       disponible: vehicleDto.disponible,
       requiereMantenimiento: vehicleDto.requiereMantenimiento,
       comentarioMantenimiento: vehicleDto.comentarioMantenimiento,
+      nivelVencina: vehicleDto.nivelVencina,
       enMantenimiento: vehicleDto.enMantenimiento,
       estadoMantenimiento: vehicleDto.estadoMantenimiento,
       instructoresAsignados: vehicleDto.instructores.map((instructor) => instructor.id),

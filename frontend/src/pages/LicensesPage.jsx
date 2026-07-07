@@ -13,6 +13,7 @@ import '../styles/dashboard.css'
 export default function LicensesPage() {
   const { usuario } = useAuth()
   const { licenses, loading, error, submitLoading, fetchLicenses, createLicense, updateLicense, deleteLicense, setError } = useLicenses()
+  const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace(/\/api$/, '')
   
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -21,6 +22,10 @@ export default function LicensesPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [licenseToDelete, setLicenseToDelete] = useState(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [licenseImage, setLicenseImage] = useState(null)
+  const [editLicenseImage, setEditLicenseImage] = useState(null)
+  const [licenseImagePreview, setLicenseImagePreview] = useState(null)
+  const [editLicenseImagePreview, setEditLicenseImagePreview] = useState(null)
 
   useEffect(() => {
     // Admin, instructor, profesor y usuario pueden acceder para gestionar o enviar su licencia
@@ -32,16 +37,29 @@ export default function LicensesPage() {
     fetchLicenses()
   }, [usuario])
 
+  const getLicenseImageUrl = (imagePath) => {
+    if (!imagePath) return null
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return imagePath
+    if (imagePath.startsWith('/')) return `${API_BASE_URL}${imagePath}`
+    return `${API_BASE_URL}/uploads/licenses/${imagePath}`
+  }
+
   const handleEdit = (license) => {
     setEditingLicense(license)
+    setEditLicenseImagePreview(getLicenseImageUrl(license?.imagenRuta))
     setIsEditModalOpen(true)
   }
 
   const handleUpdateLicense = async (formData) => {
     try {
+      if (editLicenseImage) {
+        formData.imagenRuta = editLicenseImage
+      }
       await updateLicense(editingLicense.id, formData)
       setIsEditModalOpen(false)
       setEditingLicense(null)
+      setEditLicenseImage(null)
+      setEditLicenseImagePreview(null)
     } catch (err) {
       throw err
     }
@@ -49,14 +67,43 @@ export default function LicensesPage() {
 
   const handleCreateLicense = async (formData) => {
     try {
+      if (licenseImage) {
+        formData.imagenRuta = licenseImage
+      }
       await createLicense(formData)
       setIsModalOpen(false)
+      setLicenseImage(null)
+      setLicenseImagePreview(null)
     } catch (err) {
       throw err
     }
   }
 
-  const handleDelete = (license) => {
+  const handleImageUpload = (event, isEdit = false) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 5242880) {
+      setError('La imagen no puede exceder 5MB')
+      return
+    }
+
+    const previewUrl = URL.createObjectURL(file)
+
+    if (isEdit) {
+      setEditLicenseImage(file)
+      setEditLicenseImagePreview(previewUrl)
+    } else {
+      setLicenseImage(file)
+      setLicenseImagePreview(previewUrl)
+    }
+  }
+
+  const handleDelete = (licenseOrId) => {
+    const license = typeof licenseOrId === 'object' && licenseOrId !== null
+      ? licenseOrId
+      : { id: licenseOrId }
+
     setLicenseToDelete(license)
     setIsDeleteModalOpen(true)
   }
@@ -89,6 +136,27 @@ export default function LicensesPage() {
     { key: 'categoria', label: 'Categoría' },
     { key: 'fecha_emision', label: 'Emisión' },
     { key: 'fecha_vencimiento', label: 'Vencimiento' },
+    {
+      key: 'imagen_ruta',
+      label: 'Imagen',
+      render: (row) => (
+        <div className="flex items-center gap-2">
+          {row.imagenRuta ? (
+            <div className="flex items-center gap-2">
+              <img
+                src={getLicenseImageUrl(row.imagenRuta)}
+                alt="Licencia"
+                className="w-10 h-10 rounded-lg object-cover border border-gray-300"
+                title="Vista previa de la licencia"
+              />
+              <span className="text-xs text-gray-600">Disponible</span>
+            </div>
+          ) : (
+            <span className="text-xs text-gray-400">Sin imagen</span>
+          )}
+        </div>
+      )
+    },
     { 
       key: 'activa', 
       label: 'Estado',
@@ -163,41 +231,10 @@ export default function LicensesPage() {
       </div>
 
       <Modal isOpen={isModalOpen} title="Crear Nueva Licencia" onClose={() => setIsModalOpen(false)}>
-        <Form
-          fields={[
-            { name: 'numeroLicencia', label: 'Número de Licencia', type: 'text', placeholder: 'ej: LIC12345678', required: true },
-            { 
-              name: 'tipoLicencia', 
-              label: 'Tipo de Licencia', 
-              type: 'select',
-              options: [
-                { value: 'A', label: 'A' },
-                { value: 'B', label: 'B' },
-                { value: 'C', label: 'C' },
-              ],
-              required: true,
-            },
-            { name: 'categoria', label: 'Categoría', type: 'text', placeholder: 'ej: Conducción', required: true },
-            { name: 'fechaEmision', label: 'Fecha de Emisión', type: 'date', required: true },
-            { name: 'fechaVencimiento', label: 'Fecha de Vencimiento', type: 'date', required: true },
-            { 
-              name: 'activa', 
-              label: 'Enviar como licencia aprobada', 
-              type: 'checkbox',
-              defaultValue: false,
-            },
-          ]}
-          onSubmit={handleCreateLicense}
-          loading={submitLoading}
-          submitLabel="Crear Licencia"
-        />
-      </Modal>
-
-      <Modal isOpen={isEditModalOpen} title="Editar Licencia" onClose={() => setIsEditModalOpen(false)}>
-        {editingLicense && (
+        <div className="space-y-6">
           <Form
             fields={[
-              { name: 'numeroLicencia', label: 'Número de Licencia', type: 'text', placeholder: 'ej: LIC12345678', required: true, defaultValue: editingLicense.numeroLicencia },
+              { name: 'numeroLicencia', label: 'Número de Licencia', type: 'text', placeholder: 'ej: LIC12345678', required: true },
               { 
                 name: 'tipoLicencia', 
                 label: 'Tipo de Licencia', 
@@ -208,15 +245,105 @@ export default function LicensesPage() {
                   { value: 'C', label: 'C' },
                 ],
                 required: true,
-                defaultValue: editingLicense.tipoLicencia,
               },
-              { name: 'categoria', label: 'Categoría', type: 'text', placeholder: 'ej: Profesional', defaultValue: editingLicense.categoria },
-              { name: 'fechaVencimiento', label: 'Fecha de Vencimiento', type: 'date', required: true, defaultValue: editingLicense.fechaVencimiento },
+              { name: 'categoria', label: 'Categoría', type: 'text', placeholder: 'ej: Conducción', required: true },
+              { name: 'fechaEmision', label: 'Fecha de Emisión', type: 'date', required: true },
+              { name: 'fechaVencimiento', label: 'Fecha de Vencimiento', type: 'date', required: true },
+              { 
+                name: 'activa', 
+                label: 'Enviar como licencia aprobada', 
+                type: 'checkbox',
+                defaultValue: false,
+              },
             ]}
-            onSubmit={handleUpdateLicense}
+            onSubmit={handleCreateLicense}
             loading={submitLoading}
-            submitLabel="Actualizar Licencia"
-          />
+            submitLabel="Crear Licencia"
+          >
+            <div className="pt-4 border-t">
+              <label className="block text-sm font-semibold text-gray-700 mb-3">Imagen de la Licencia</label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary transition-colors">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  id="licenseImage"
+                  onChange={(e) => handleImageUpload(e, false)}
+                />
+                <label htmlFor="licenseImage" className="cursor-pointer">
+                  <p className="text-gray-600">📷 Sube la foto de tu licencia</p>
+                  <p className="text-xs text-gray-500 mt-1">PNG, JPG o GIF (máx. 5MB)</p>
+                </label>
+                {licenseImagePreview && (
+                  <div className="mt-4 flex justify-center">
+                    <img src={licenseImagePreview} alt="Vista previa de la licencia" className="h-40 rounded-lg object-cover border border-gray-300" />
+                  </div>
+                )}
+              </div>
+            </div>
+          </Form>
+        </div>
+      </Modal>
+
+      <Modal isOpen={isEditModalOpen} title="Editar Licencia" onClose={() => setIsEditModalOpen(false)}>
+        {editingLicense && (
+          <div className="space-y-6">
+            <Form
+              fields={[
+                { name: 'numeroLicencia', label: 'Número de Licencia', type: 'text', placeholder: 'ej: LIC12345678', required: true, defaultValue: editingLicense.numeroLicencia },
+                { 
+                  name: 'tipoLicencia', 
+                  label: 'Tipo de Licencia', 
+                  type: 'select',
+                  options: [
+                    { value: 'A', label: 'A' },
+                    { value: 'B', label: 'B' },
+                    { value: 'C', label: 'C' },
+                  ],
+                  required: true,
+                  defaultValue: editingLicense.tipoLicencia,
+                },
+                { name: 'categoria', label: 'Categoría', type: 'text', placeholder: 'ej: Profesional', defaultValue: editingLicense.categoria },
+                { name: 'fechaVencimiento', label: 'Fecha de Vencimiento', type: 'date', required: true, defaultValue: editingLicense.fechaVencimiento },
+              ]}
+              onSubmit={handleUpdateLicense}
+              loading={submitLoading}
+              submitLabel="Actualizar Licencia"
+            >
+              <div className="pt-4 border-t">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">Imagen de la Licencia</label>
+                {editingLicense.imagenRuta && !editLicenseImagePreview && (
+                  <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                    <p className="text-xs text-gray-600 mb-2">Imagen actual:</p>
+                    <img
+                      src={getLicenseImageUrl(editingLicense.imagenRuta)}
+                      alt="Licencia actual"
+                      className="w-full h-auto rounded-lg border border-gray-300 max-h-48 object-cover"
+                    />
+                  </div>
+                )}
+                {editLicenseImagePreview && (
+                  <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                    <p className="text-xs text-gray-600 mb-2">Nueva imagen:</p>
+                    <img src={editLicenseImagePreview} alt="Nueva licencia" className="w-full h-auto rounded-lg border border-gray-300 max-h-48 object-cover" />
+                  </div>
+                )}
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    id="licenseImageEdit"
+                    onChange={(e) => handleImageUpload(e, true)}
+                  />
+                  <label htmlFor="licenseImageEdit" className="cursor-pointer">
+                    <p className="text-gray-600">📷 Reemplaza la foto de la licencia</p>
+                    <p className="text-xs text-gray-500 mt-1">PNG, JPG o GIF (máx. 5MB)</p>
+                  </label>
+                </div>
+              </div>
+            </Form>
+          </div>
         )}
       </Modal>
 

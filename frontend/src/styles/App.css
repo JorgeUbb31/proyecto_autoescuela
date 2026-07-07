@@ -1,14 +1,47 @@
 /* Estilos específicos de App */
 
 .app {
-  @apply min-h-screen flex flex-col bg-beige-50;
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(circle at top left, rgba(200, 158, 115, 0.18), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(93, 64, 55, 0.07), transparent 26%),
+    linear-gradient(135deg, #fbf9f4 0%, #f7f2ea 100%);
+  color: #1f1714;
+  overflow-x: hidden;
+}
+
+.app::before {
+  content: '';
+  position: fixed;
+  left: -90px;
+  bottom: -90px;
+  width: 290px;
+  height: 290px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(200, 158, 115, 0.24) 0%, rgba(200, 158, 115, 0.09) 35%, transparent 72%);
+  filter: blur(2px);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .app-content {
-  @apply flex-1 px-4 py-8 mx-auto max-w-7xl w-full;
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  padding: 36px 18px 64px;
+  margin: 0 auto;
+  max-width: 1280px;
+  width: 100%;
 }
 
 .container {
-  @apply max-w-7xl mx-auto px-4;
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 16px;
 }
 

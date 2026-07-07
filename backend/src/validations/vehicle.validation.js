@@ -3,13 +3,14 @@ import Joi from "joi";
 
 export const createVehicleValidation = Joi.object({
   matricula: Joi.string()
+    .uppercase()
     .required()
-    .pattern(/^[A-Z]{2}[A-Z0-9]{4}[0-9]{2}$|^[A-Z]{2}\s?[A-Z0-9]{4}\s?[0-9]{2}$/)
+    .pattern(/^[A-Z]{2}(?:-[A-Z]{2}-\d{2}|-\d{2}-\d{2})$|^[A-Z]{2,3}-\d{2}$/)
     .max(8)
     .messages({
       "string.empty": "La matrícula no puede estar vacía.",
       "string.pattern.base":
-        "Formato de matrícula inválido. Debe ser: AABBCCDD o similar.",
+        "Formato de matrícula inválido. Ejemplos válidos: XB-00-12 para autos o TKV-43 para motos.",
       "string.max": "La matrícula no puede exceder 8 caracteres.",
       "any.required": "La matrícula es obligatoria.",
     }),
@@ -45,15 +46,17 @@ export const createVehicleValidation = Joi.object({
       "any.required": "El año es obligatorio.",
     }),
   tipo: Joi.string()
+    .uppercase()
     .required()
-    .pattern(/^(AUTO|CAMIONETA|CAMION|MOTO|BICICLETA)$/)
+    .pattern(/^(AUTO|CAMIONETA|CAMION|MOTO)$/)
     .messages({
       "string.empty": "El tipo no puede estar vacío.",
       "string.pattern.base":
-        "El tipo debe ser uno de: AUTO, CAMIONETA, CAMION, MOTO, BICICLETA.",
+        "El tipo debe ser uno de: AUTO, CAMIONETA, CAMION, MOTO.",
       "any.required": "El tipo es obligatorio.",
     }),
   transmision: Joi.string()
+    .uppercase()
     .pattern(/^(AUTOMATICA|MANUAL)$/)
     .messages({
       "string.pattern.base":
@@ -81,7 +84,7 @@ export const createVehicleValidation = Joi.object({
 
 
 export const maintenanceVehicleValidation = Joi.object({
-  comentarioMantenimiento: Joi.string().max(500).messages({
+  comentarioMantenimiento: Joi.string().allow('', null).max(500).messages({
     "string.max": "El comentario no puede exceder 500 caracteres.",
   }),
   requiereMantenimiento: Joi.boolean().messages({
@@ -89,6 +92,9 @@ export const maintenanceVehicleValidation = Joi.object({
   }),
   enMantenimiento: Joi.boolean().messages({
     "boolean.base": "La decisión de mantenimiento debe ser un valor booleano.",
+  }),
+  nivelVencina: Joi.string().allow('', null).max(100).messages({
+    "string.max": "El nivel de vencina no puede exceder 100 caracteres.",
   }),
 })
   .unknown(false)
@@ -98,11 +104,12 @@ export const maintenanceVehicleValidation = Joi.object({
 
 export const updateVehicleValidation = Joi.object({
   matricula: Joi.string()
-    .pattern(/^[A-Z]{2}[A-Z0-9]{4}[0-9]{2}$|^[A-Z]{2}\s?[A-Z0-9]{4}\s?[0-9]{2}$/)
+    .uppercase()
+    .pattern(/^[A-Z]{2}(?:-[A-Z]{2}-\d{2}|-\d{2}-\d{2})$|^[A-Z]{2,3}-\d{2}$/)
     .max(8)
     .messages({
       "string.pattern.base":
-        "Formato de matrícula inválido. Debe ser: AABBCCDD o similar.",
+        "Formato de matrícula inválido. Ejemplos válidos: XB-00-12 para autos o TKV-43 para motos.",
       "string.max": "La matrícula no puede exceder 8 caracteres.",
     }),
   marca: Joi.string()
@@ -129,10 +136,11 @@ export const updateVehicleValidation = Joi.object({
       "number.max": `El año no puede ser mayor a ${new Date().getFullYear() + 1}.`,
     }),
   tipo: Joi.string()
-    .pattern(/^(AUTO|CAMIONETA|CAMION|MOTO|BICICLETA)$/)
+    .uppercase()
+    .pattern(/^(AUTO|CAMIONETA|CAMION|MOTO)$/)
     .messages({
       "string.pattern.base":
-        "El tipo debe ser uno de: AUTO, CAMIONETA, CAMION, MOTO, BICICLETA.",
+        "El tipo debe ser uno de: AUTO, CAMIONETA, CAMION, MOTO.",
     }),
   transmision: Joi.string()
     .pattern(/^(AUTOMATICA|MANUAL)$/)

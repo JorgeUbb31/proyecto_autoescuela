@@ -1,6 +1,7 @@
 "use strict";
 import { AppDataSource } from "../config/configDb.js";
 import { mapVehicle, mapVehicles } from "./response.mapper.js";
+import { sendMaintenanceNotification } from "../helpers/email.helper.js";
 
 /**
  * Crea un nuevo vehículo
@@ -36,18 +37,31 @@ export async function createVehicle(vehicleData) {
 /**
  * Obtiene todos los vehículos con filtrado según rol del usuario
  */
-export async function getAllVehicles(userRole = null) {
+export async function getAllVehicles(userRole = null, userId = null) {
   const vehicleRepository = AppDataSource.getRepository("Vehiculo");
+
+  if (userRole === "instructor" || userRole === "profesor") {
+    const instructorRepository = AppDataSource.getRepository("Instructor");
+    const instructor = await instructorRepository
+      .createQueryBuilder("instructor")
+      .leftJoinAndSelect("instructor.vehiculos", "vehiculo")
+      .leftJoinAndSelect("instructor.usuario", "usuario")
+      .where("usuario.id = :userId", { userId })
+      .getOne();
+
+    const assignedVehicles = instructor?.vehiculos || [];
+    return mapVehicles(assignedVehicles, userRole);
+  }
+
   const vehicles = await vehicleRepository.find({
     relations: ["instructores"],
   });
 
-  const mappedVehicles = mapVehicles(
-    vehicles.filter((vehicle) => (userRole === "secretaria" ? vehicle.disponible : true)),
-    userRole
-  );
+  const filteredVehicles = userRole === "secretaria"
+    ? vehicles.filter((vehicle) => vehicle.disponible)
+    : vehicles;
 
-  return mappedVehicles;
+  return mapVehicles(filteredVehicles, userRole);
 }
 
 /**
@@ -123,9 +137,11 @@ export async function deleteVehicle(vehicleId) {
 
 export async function updateMaintenance(vehicleId, maintenanceData, userRole) {
   const vehicleRepository = AppDataSource.getRepository("Vehiculo");
+  const instructorRepository = AppDataSource.getRepository("Instructor");
 
   const vehicle = await vehicleRepository.findOne({
     where: { id: vehicleId },
+    relations: ["instructores", "instructores.usuario"],
   });
 
   if (!vehicle) {
@@ -137,15 +153,28 @@ export async function updateMaintenance(vehicleId, maintenanceData, userRole) {
     vehicle.enMantenimiento = shouldBeInMaintenance;
     vehicle.requiereMantenimiento = shouldBeInMaintenance;
     vehicle.comentarioMantenimiento = maintenanceData.comentarioMantenimiento || vehicle.comentarioMantenimiento;
+    vehicle.nivelVencina = maintenanceData.nivelVencina || vehicle.nivelVencina;
     vehicle.disponible = !shouldBeInMaintenance;
   } else if (userRole === "instructor" || userRole === "profesor") {
     vehicle.requiereMantenimiento = maintenanceData.requiereMantenimiento !== false;
     vehicle.comentarioMantenimiento = maintenanceData.comentarioMantenimiento || vehicle.comentarioMantenimiento;
+    vehicle.nivelVencina = maintenanceData.nivelVencina || vehicle.nivelVencina;
     vehicle.enMantenimiento = false;
     vehicle.disponible = false;
   }
 
   await vehicleRepository.save(vehicle);
+
+  const assignedInstructor = vehicle.instructores?.[0];
+  if (assignedInstructor?.correo || assignedInstructor?.usuario?.email) {
+    await sendMaintenanceNotification({
+      to: assignedInstructor.correo || assignedInstructor.usuario.email,
+      instructorName: assignedInstructor.usuario?.username || assignedInstructor.correo || 'Instructor',
+      vehicleMatricula: vehicle.matricula,
+      comment: vehicle.comentarioMantenimiento,
+      nivelVencimiento: vehicle.nivelVencina,
+    });
+  }
 
   return mapVehicle(vehicle);
 }

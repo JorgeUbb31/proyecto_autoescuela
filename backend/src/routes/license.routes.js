@@ -15,12 +15,27 @@ const router = Router();
 router.use(authenticateJwt);
 router.use(populateUser);
 
-router.post("/", upload.single('imagen'), createLicense);
+router.post(
+  "/",
+  upload.fields([
+    { name: "imagen", maxCount: 1 },
+    { name: "imagenRuta", maxCount: 1 },
+  ]),
+  createLicense
+);
 
 router.get("/", getLicenses);
 router.get("/:id", getLicenseById);
 
-router.put("/:id", isAdminOrInstructor, updateLicense);
+router.put(
+  "/:id",
+  isAdminOrInstructor,
+  upload.fields([
+    { name: "imagen", maxCount: 1 },
+    { name: "imagenRuta", maxCount: 1 },
+  ]),
+  updateLicense
+);
 
 router.delete("/:id", isAdmin, deleteLicense);
 

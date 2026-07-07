@@ -27,7 +27,9 @@ export async function createLicense(token, formData) {
   if (formData.fechaEmision) data.append('fechaEmision', formData.fechaEmision)
   if (formData.fechaVencimiento) data.append('fechaVencimiento', formData.fechaVencimiento)
   if (formData.activa !== undefined) data.append('activa', formData.activa ? 'true' : 'false')
-  if (formData.imagenRuta && formData.imagenRuta instanceof File) {
+  if (typeof formData.imagenRuta === 'string' && formData.imagenRuta.trim()) {
+    data.append('imagenRuta', formData.imagenRuta)
+  } else if (formData.imagenRuta && formData.imagenRuta instanceof File) {
     data.append('imagenRuta', formData.imagenRuta)
   }
 
@@ -55,7 +57,9 @@ export async function updateLicense(token, licenseId, formData) {
   if (formData.tipoLicencia) data.append('tipoLicencia', formData.tipoLicencia)
   if (formData.categoria) data.append('categoria', formData.categoria)
   if (formData.fechaVencimiento) data.append('fechaVencimiento', formData.fechaVencimiento)
-  if (formData.imagenRuta && formData.imagenRuta instanceof File) {
+  if (typeof formData.imagenRuta === 'string' && formData.imagenRuta.trim()) {
+    data.append('imagenRuta', formData.imagenRuta)
+  } else if (formData.imagenRuta && formData.imagenRuta instanceof File) {
     data.append('imagenRuta', formData.imagenRuta)
   }
 

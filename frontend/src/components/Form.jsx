@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function Form({ fields, onSubmit, loading = false, submitLabel = 'Guardar' }) {
+export default function Form({ fields, onSubmit, loading = false, submitLabel = 'Guardar', children }) {
   const [formData, setFormData] = useState(() => {
     const initial = {}
     fields.forEach((field) => {
@@ -170,6 +170,7 @@ export default function Form({ fields, onSubmit, loading = false, submitLabel = 
         </div>
       ))}
 
+      {children}
       <div className="flex justify-end gap-3 pt-4">
         <button
           type="submit"

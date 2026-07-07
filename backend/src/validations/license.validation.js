@@ -69,6 +69,11 @@ export const createLicenseValidation = Joi.object({
     .messages({
       "boolean.base": "El estado debe ser un valor booleano.",
     }),
+  imagenRuta: Joi.string()
+    .allow('', null)
+    .messages({
+      "string.base": "La imagen debe ser un texto en formato base64.",
+    }),
 })
   .unknown(false)
   .messages({
@@ -109,6 +114,11 @@ export const updateLicenseValidation = Joi.object({
   activa: Joi.boolean()
     .messages({
       "boolean.base": "El estado debe ser un valor booleano.",
+    }),
+  imagenRuta: Joi.string()
+    .allow('', null)
+    .messages({
+      "string.base": "La imagen debe ser un texto en formato base64.",
     }),
 })
   .unknown(false)

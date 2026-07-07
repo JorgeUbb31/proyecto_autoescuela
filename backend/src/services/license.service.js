@@ -8,7 +8,7 @@ import { mapLicense, mapLicenses } from "./response.mapper.js";
 export async function createLicense(licenseData) {
   const licenseRepository = AppDataSource.getRepository("Licencia");
   const instructorRepository = AppDataSource.getRepository("Instructor");
-  const userRepository = AppDataSource.getRepository("Usuario");
+  const userRepository = AppDataSource.getRepository("User");
 
   // Verificar que no exista una licencia con ese número
   const existingLicense = await licenseRepository.findOne({
@@ -34,14 +34,14 @@ export async function createLicense(licenseData) {
 
   if (!instructor && licenseData.userId && user) {
     instructor = await instructorRepository.findOne({
-      where: { userId: user.id },
+      where: { usuario: { id: user.id } },
       relations: ["usuario"],
     });
   }
 
   if (!instructor && licenseData.userId && user) {
     const pendingInstructor = instructorRepository.create({
-      userId: user.id,
+      usuario: user,
       rut: licenseData.rut || user.rut,
       especializacion: licenseData.especializacion || "Licencia presentada",
       correo: user.email,
@@ -65,6 +65,10 @@ export async function createLicense(licenseData) {
     throw new Error("Solo usuarios, instructores o profesores pueden enviar licencias para revisión.");
   }
 
+  if (!instructor) {
+    throw new Error("No se pudo encontrar o crear un instructor asociado al usuario.");
+  }
+
   const newLicense = licenseRepository.create({
     instructorId: instructor.id,
     tipoLicencia: licenseData.tipoLicencia,
@@ -73,6 +77,7 @@ export async function createLicense(licenseData) {
     fechaEmision: licenseData.fechaEmision,
     fechaVencimiento: licenseData.fechaVencimiento,
     activa: licenseData.activa ?? false,
+    imagenRuta: licenseData.imagenRuta || null,
   });
 
   await licenseRepository.save(newLicense);

@@ -15,75 +15,77 @@ import './styles/App.css'
 
 function App() {
   return (
-    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <AuthProvider>
-        <SidebarProvider>
-          <Routes>
-            {/* Rutas públicas */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
+    <div className="app">
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <AuthProvider>
+          <SidebarProvider>
+            <Routes>
+              {/* Rutas públicas */}
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
 
-            {/* Rutas protegidas */}
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <DashboardPage />
-                </ProtectedRoute>
-              }
-            />
+              {/* Rutas protegidas */}
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <DashboardPage />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <DashboardPage />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <DashboardPage />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/users"
-              element={
-                <ProtectedRoute>
-                  <UsersPage />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/users"
+                element={
+                  <ProtectedRoute>
+                    <UsersPage />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/instructors"
-              element={
-                <ProtectedRoute>
-                  <InstructorsPage />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/instructors"
+                element={
+                  <ProtectedRoute>
+                    <InstructorsPage />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/vehicles"
-              element={
-                <ProtectedRoute>
-                  <VehiclesPage />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/vehicles"
+                element={
+                  <ProtectedRoute>
+                    <VehiclesPage />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/licenses"
-              element={
-                <ProtectedRoute>
-                  <LicensesPage />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/licenses"
+                element={
+                  <ProtectedRoute>
+                    <LicensesPage />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Redireccionar rutas no encontradas a login */}
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </Routes>
-        </SidebarProvider>
-      </AuthProvider>
-    </Router>
+              {/* Redireccionar rutas no encontradas a login */}
+              <Route path="*" element={<Navigate to="/login" replace />} />
+            </Routes>
+          </SidebarProvider>
+        </AuthProvider>
+      </Router>
+    </div>
   )
 }
 
