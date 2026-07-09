@@ -218,30 +218,6 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
-
-          <div className="dashboard-info animate-slide-up" style={{ animationDelay: '0.6s' }}>
-            <h2 className="text-2xl font-bold text-primary mb-4">Información de Perfil</h2>
-            <div className="bg-beige-100 rounded-lg p-6 border-l-4 border-primary">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600">Nombre de Usuario</p>
-                  <p className="font-semibold text-gray-900">{usuario?.username}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Email</p>
-                  <p className="font-semibold text-gray-900">{usuario?.email}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">RUT</p>
-                  <p className="font-semibold text-gray-900">{usuario?.rut}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Rol</p>
-                  <p className="font-semibold text-gray-900">{roleDisplay}</p>
-                </div>
-              </div>
-            </div>
-          </div>
         </main>
       </div>
     </div>
