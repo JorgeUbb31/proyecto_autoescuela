@@ -51,6 +51,11 @@ export const LicenseEntity = new EntitySchema({
             default: true,
             comment: "La licencia es válida y activa",
         },
+        reminderSentAt: {
+            type: "timestamp",
+            nullable: true,
+            comment: "Fecha en que se envió el recordatorio de renovación de licencia",
+        },
         imagenRuta: {
             type: String,
             nullable: true,

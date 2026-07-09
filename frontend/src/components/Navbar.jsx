@@ -80,12 +80,26 @@ export default function Navbar() {
 
               <div className="account-menu-divider" />
 
-              <button className="account-menu-item" type="button">
+              <button
+                className="account-menu-item"
+                type="button"
+                onClick={() => {
+                  window.location.href = '/profile'
+                  setIsAccountMenuOpen(false)
+                }}
+              >
                 <span>👤</span>
                 Mi perfil
               </button>
 
-              <button className="account-menu-item" type="button">
+              <button
+                className="account-menu-item"
+                type="button"
+                onClick={() => {
+                  window.location.href = '/settings'
+                  setIsAccountMenuOpen(false)
+                }}
+              >
                 <span>⚙️</span>
                 Configuración
               </button>

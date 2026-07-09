@@ -4,6 +4,7 @@ import {
   createVehicle,
   getVehicles,
   getVehicleById,
+  getFleetSummary,
   updateVehicle,
   deleteVehicle,
   updateMaintenance,
@@ -11,7 +12,7 @@ import {
   removeVehicleFromInstructor,
 } from "../controllers/vehicle.controller.js";
 import { authenticateJwt } from "../middleware/authentication.middleware.js";
-import { isAdmin, populateUser } from "../middleware/authorization.middleware.js";
+import { isAdmin, isAuthorized, populateUser } from "../middleware/authorization.middleware.js";
 
 const router = Router();
 
@@ -21,6 +22,7 @@ router.use(populateUser);
 router.post("/", isAdmin, createVehicle);
 
 router.get("/", getVehicles);
+router.get("/summary", isAuthorized(["administrador", "secretaria"]), getFleetSummary);
 router.get("/:id", getVehicleById);
 
 router.put("/:id", isAdmin, updateVehicle);

@@ -6,7 +6,6 @@ import Sidebar from '../components/Sidebar.jsx'
 import Table from '../components/Table.jsx'
 import Modal from '../components/Modal.jsx'
 import Form from '../components/Form.jsx'
-import DeleteConfirmationModal from '../components/DeleteConfirmationModal.jsx'
 import AccessDenied from '../components/AccessDenied.jsx'
 import * as licenseService from '../services/licenseService.js'
 import '../styles/dashboard.css'
@@ -23,9 +22,6 @@ export default function InstructorsPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editingInstructor, setEditingInstructor] = useState(null)
   const [hasAccess, setHasAccess] = useState(true)
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-  const [instructorToDelete, setInstructorToDelete] = useState(null)
-  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     // Solo admin y secretaria pueden acceder
@@ -98,31 +94,6 @@ export default function InstructorsPage() {
     }
   }
 
-  const handleDelete = (instructor) => {
-    setInstructorToDelete(instructor)
-    setIsDeleteModalOpen(true)
-  }
-
-  const handleConfirmDelete = async () => {
-    if (!instructorToDelete) return
-    
-    setIsDeleting(true)
-    try {
-      await deleteInstructor(instructorToDelete.id)
-      setIsDeleteModalOpen(false)
-      setInstructorToDelete(null)
-    } catch (err) {
-      setError(err.message)
-      console.error('Error al eliminar:', err)
-    } finally {
-      setIsDeleting(false)
-    }
-  }
-
-  const handleCancelDelete = () => {
-    setIsDeleteModalOpen(false)
-    setInstructorToDelete(null)
-  }
 
   const professorColumns = [
     { key: 'id', label: 'ID' },
@@ -281,7 +252,6 @@ export default function InstructorsPage() {
                 data={instructors}
                 loading={loading}
                 onEdit={usuario?.role === 'administrador' ? handleEdit : null}
-                onDelete={usuario?.role === 'administrador' ? handleDelete : null}
               />
             </div>
           </div>
@@ -360,15 +330,6 @@ export default function InstructorsPage() {
         )}
       </Modal>
 
-      <DeleteConfirmationModal
-        isOpen={isDeleteModalOpen}
-        title="Eliminar Instructor"
-        message={`¿Estás seguro de que quieres eliminar al instructor ${instructorToDelete?.rut}?`}
-        resourceName={`al instructor "${instructorToDelete?.rut}"`}
-        onConfirm={handleConfirmDelete}
-        onCancel={handleCancelDelete}
-        isLoading={isDeleting}
-      />
     </div>
   )
 }

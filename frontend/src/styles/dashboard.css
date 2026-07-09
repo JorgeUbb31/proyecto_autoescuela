@@ -135,7 +135,7 @@
   transition: transform 220ms ease;
 }
 
-.account-caret.open {
+..account-caret.open {
   transform: rotate(180deg);
 }
 
@@ -143,38 +143,38 @@
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  min-width: 250px;
-  padding: 12px;
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.16);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: 0 20px 42px rgba(25, 15, 10, 0.25);
+  min-width: 260px;
+  padding: 14px;
+  border-radius: 22px;
+  border: 1px solid rgba(148, 106, 72, 0.18);
+  background: rgba(255, 250, 243, 0.96);
+  backdrop-filter: blur(18px) saturate(170%);
+  box-shadow: 0 35px 60px rgba(33, 18, 10, 0.25);
 }
 
-.account-menu-header {
+..account-menu-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 6px 4px 12px;
+  gap: 14px;
+  padding: 8px 4px 14px;
 }
 
 .account-menu-header strong {
   display: block;
-  color: #fff;
-  font-size: 0.95rem;
+  color: #2f1f16;
+  font-size: 1rem;
 }
 
 .account-menu-header p {
   margin: 3px 0 0;
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.74);
+  font-size: 0.82rem;
+  color: #4f3a2f;
 }
 
 .account-menu-divider {
   height: 1px;
-  margin: 4px 0 8px;
-  background: rgba(255, 255, 255, 0.16);
+  margin: 6px 0 10px;
+  background: rgba(148, 106, 72, 0.18);
 }
 
 .account-menu-item {
@@ -186,7 +186,7 @@
   border: none;
   border-radius: 12px;
   background: transparent;
-  color: #fff;
+  color: #3b2a1f;
   cursor: pointer;
   text-align: left;
   font-weight: 600;
@@ -199,11 +199,12 @@
 }
 
 .account-menu-item.danger {
-  color: #ffd8d8;
+  color: #9b2c2c;
+  background: rgba(254, 226, 226, 0.5);
 }
 
 .account-menu-item.danger:hover {
-  background: rgba(239, 68, 68, 0.22);
+  background: rgba(239, 68, 68, 0.25);
 }
 
 .sidebar {

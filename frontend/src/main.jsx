@@ -10,6 +10,8 @@ import UsersPage from './pages/UsersPage.jsx'
 import InstructorsPage from './pages/InstructorsPage.jsx'
 import VehiclesPage from './pages/VehiclesPage.jsx'
 import LicensesPage from './pages/LicensesPage.jsx'
+import ProfilePage from './pages/ProfilePage.jsx'
+import SettingsPage from './pages/SettingsPage.jsx'
 import './styles/index.css'
 import './styles/App.css'
 
@@ -75,6 +77,24 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <LicensesPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <ProfilePage />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <SettingsPage />
                   </ProtectedRoute>
                 }
               />

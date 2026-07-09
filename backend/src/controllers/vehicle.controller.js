@@ -71,6 +71,20 @@ export async function getVehicleById(req, res) {
   }
 }
 
+export async function getFleetSummary(req, res) {
+  try {
+    const summary = await vehicleService.getFleetSummary(req.user.role);
+
+    res.status(200).json({ message: "Resumen de la flota", data: summary });
+  } catch (error) {
+    console.error(
+      "Error en vehicle.controller.js -> getFleetSummary(): ",
+      error
+    );
+    res.status(500).json({ message: "Error al obtener el resumen de la flota" });
+  }
+}
+
 export async function updateVehicle(req, res) {
   try {
     const vehicleId = parseInt(req.params.id);

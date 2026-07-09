@@ -7,6 +7,7 @@ import indexRoutes from "./routes/index.routes.js";
 import { connectDB, AppDataSource } from "./config/configDb.js";
 import { PORT, HOST } from "./config/configEnv.js";
 import { initializeDatabase } from "./config/initdb.js";
+import { sendLicenseExpirationReminders } from "./services/license.service.js";
 import { fileURLToPath } from "url";
 import path from "path";
 
@@ -90,6 +91,15 @@ async function setupAPI() {
 
     await initializeDatabase();
     console.log("=> Datos iniciales cargados");
+
+    await sendLicenseExpirationReminders();
+    setInterval(async () => {
+      try {
+        await sendLicenseExpirationReminders();
+      } catch (error) {
+        console.error("Error al enviar recordatorios de licencia:", error);
+      }
+    }, 24 * 60 * 60 * 1000);
 
     await setupServer();
   } catch (error) {

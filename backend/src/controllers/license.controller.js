@@ -90,6 +90,17 @@ export async function getLicenses(req, res) {
   }
 }
 
+export async function getLicenseSummary(req, res) {
+  try {
+    const summary = await licenseService.getLicenseSummary();
+
+    res.status(200).json({ message: "Resumen de licencias", data: summary });
+  } catch (error) {
+    console.error("Error en license.controller.js -> getLicenseSummary(): ", error);
+    res.status(500).json({ message: "Error al obtener el resumen de licencias" });
+  }
+}
+
 export async function getLicenseById(req, res) {
   try {
     const licenseId = parseInt(req.params.id);

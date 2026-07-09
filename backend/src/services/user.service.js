@@ -1,7 +1,7 @@
 "use strict";
 import User from "../entity/user.entity.js";
 import { AppDataSource } from "../config/configDb.js";
-import { mapUser, mapUsers } from "./response.mapper.js";
+import { mapUser, mapUsers } from "../helpers/response.mapper.js";
 
 /**
  * Obtiene todos los usuarios de la base de datos

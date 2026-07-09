@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+import { API_URL } from '../config/app.config.js';
 
 export async function fetchLicenses(token) {
   const response = await fetch(`${API_URL}/licenses`, {
@@ -93,4 +93,19 @@ export async function deleteLicense(token, licenseId) {
   }
 
   return await response.json()
+}
+
+export async function fetchLicenseSummary(token) {
+  const response = await fetch(`${API_URL}/licenses/summary`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error('Error al cargar el resumen de licencias')
+  }
+
+  const data = await response.json()
+  return data?.data || {}
 }

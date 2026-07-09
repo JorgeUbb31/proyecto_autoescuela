@@ -1,6 +1,7 @@
 "use strict";
 import { AppDataSource } from "../config/configDb.js";
-import { mapLicense, mapLicenses } from "./response.mapper.js";
+import { mapLicense, mapLicenses } from "../helpers/response.mapper.js";
+import { sendLicenseExpirationReminderNotification } from "../helpers/email.helper.js";
 
 /**
  * Crea una nueva licencia
@@ -180,4 +181,96 @@ export async function deleteLicense(licenseId) {
   await licenseRepository.remove(license);
 
   return mapLicense(license);
+}
+
+export async function getLicenseSummary() {
+  const licenseRepository = AppDataSource.getRepository("Licencia");
+  const licenses = await licenseRepository.find({
+    relations: ["instructor", "instructor.usuario"],
+  });
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const summary = licenses.reduce(
+    (acc, license) => {
+      const expiration = license.fechaVencimiento ? new Date(license.fechaVencimiento) : null;
+      if (!expiration) return acc;
+
+      expiration.setHours(0, 0, 0, 0);
+      const daysRemaining = getDaysUntilExpiration(license.fechaVencimiento);
+      const isExpired = expiration < today;
+      const isExpiringSoon = daysRemaining !== null && daysRemaining > 0 && daysRemaining <= 30;
+      const needsReminder = isExpiringSoon && !license.reminderSentAt;
+
+      acc.totalLicenses += 1;
+      if (license.activa) acc.activeLicenses += 1;
+      if (isExpired) acc.expiredLicenses += 1;
+      if (isExpiringSoon) acc.expiringSoonLicenses += 1;
+      if (needsReminder) acc.pendingReminders += 1;
+      return acc;
+    },
+    {
+      totalLicenses: 0,
+      activeLicenses: 0,
+      expiredLicenses: 0,
+      expiringSoonLicenses: 0,
+      pendingReminders: 0,
+    }
+  );
+
+  return summary;
+}
+
+function getDaysUntilExpiration(expirationDate) {
+  if (!expirationDate) return null;
+  const today = new Date();
+  const expire = new Date(expirationDate);
+  const diffMs = expire.setHours(0, 0, 0, 0) - today.setHours(0, 0, 0, 0);
+  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+}
+
+export async function sendLicenseExpirationReminders(daysThreshold = 30) {
+  const licenseRepository = AppDataSource.getRepository("Licencia");
+  const licenses = await licenseRepository.find({
+    relations: ["instructor", "instructor.usuario"],
+  });
+
+  const today = new Date();
+  const expiringSoon = licenses.filter((license) => {
+    if (!license.activa || !license.fechaVencimiento) return false;
+    const remainingDays = getDaysUntilExpiration(license.fechaVencimiento);
+    if (remainingDays === null) return false;
+    return remainingDays > 0 && remainingDays <= daysThreshold && !license.reminderSentAt;
+  });
+
+  for (const license of expiringSoon) {
+    try {
+      const assignedInstructor = license.instructor;
+      const recipientEmail = assignedInstructor?.correo || assignedInstructor?.usuario?.email;
+      const instructorName = assignedInstructor?.usuario?.username || assignedInstructor?.correo || 'Instructor';
+      const daysUntilExpiration = getDaysUntilExpiration(license.fechaVencimiento);
+
+      if (!recipientEmail) {
+        console.info(`[reminder] No hay correo para instructor de licencia ${license.numeroLicencia}`);
+        continue;
+      }
+
+      await sendLicenseExpirationReminderNotification({
+        to: recipientEmail,
+        instructorName,
+        licenceNumber: license.numeroLicencia,
+        expiryDate: license.fechaVencimiento instanceof Date
+          ? license.fechaVencimiento.toISOString().split('T')[0]
+          : license.fechaVencimiento,
+        daysRemaining: daysUntilExpiration,
+      });
+
+      license.reminderSentAt = new Date();
+      await licenseRepository.save(license);
+      console.log(`[reminder] Recordatorio enviado para licencia ${license.numeroLicencia} a ${recipientEmail}`);
+    } catch (error) {
+      console.error(`Error enviando recordatorio para licencia ${license.numeroLicencia}:`, error);
+    }
+  }
 }

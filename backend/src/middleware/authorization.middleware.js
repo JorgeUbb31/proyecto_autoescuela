@@ -27,7 +27,7 @@ export async function populateUser(req, res, next) {
 /**
  * Verifica si el usuario tiene permisos con un array de roles permitidos
  */
-export async function isAuthorized(allowedRoles) {
+export function isAuthorized(allowedRoles) {
   return async (req, res, next) => {
     try {
       const userRole = req.user?.role?.toLowerCase();

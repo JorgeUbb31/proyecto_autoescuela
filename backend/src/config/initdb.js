@@ -16,7 +16,47 @@ export const initializeDatabase = async () => {
     );
 
     if (userCount[0].count > 0) {
-      console.log("Base de datos ya contiene datos. Omitiendo inicialización.");
+      console.log("Base de datos ya contiene datos. Verificando datos de prueba específicos...");
+
+      const seedEmail = "jorgediaz.diaz4@gmail.com";
+      const existingUsers = await connection.query(
+        "SELECT id, rut, email FROM users WHERE email = $1",
+        [seedEmail]
+      );
+      const existingUser = existingUsers[0];
+
+      let jorgeUser = existingUser;
+      if (!jorgeUser) {
+        const hashedPassword = await encryptPassword("Jorge2026!");
+        const insertedUsers = await connection.query(
+          `INSERT INTO users (username, rut, email, password, role)
+           VALUES ($1, $2, $3, $4, $5)
+           RETURNING id, username, email, rut, role`,
+          ["jorge_diaz", "20.123.456-7", seedEmail, hashedPassword, "usuario"]
+        );
+        jorgeUser = insertedUsers[0];
+        console.log("Usuario de prueba creado:", seedEmail);
+      } else {
+        console.log("Usuario de prueba ya existe:", seedEmail);
+      }
+
+      const existingInstructors = await connection.query(
+        "SELECT id FROM instructores WHERE correo = $1 OR user_id = $2",
+        [seedEmail, jorgeUser.id]
+      );
+      const existingInstructor = existingInstructors[0];
+
+      if (!existingInstructor) {
+        await connection.query(
+          `INSERT INTO instructores (user_id, rut, especializacion, correo, anos_experiencia, telefono, activo)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [jorgeUser.id, jorgeUser.rut, "Licencias y documentación", seedEmail, 1, "+56955512345", true]
+        );
+        console.log("Instructor de prueba creado para:", seedEmail);
+      } else {
+        console.log("Instructor de prueba ya existe para:", seedEmail);
+      }
+
       return;
     }
 
@@ -56,6 +96,13 @@ export const initializeDatabase = async () => {
         rut: "16.234.567-8",
         email: "luis.usuario@autoescuela.cl",
         password: "Usuario123!",
+        role: "usuario",
+      },
+      {
+        username: "jorge_diaz",
+        rut: "20.123.456-7",
+        email: "jorgediaz.diaz4@gmail.com",
+        password: "Jorge2026!",
         role: "usuario",
       },
     ];
@@ -117,6 +164,15 @@ export const initializeDatabase = async () => {
         correo: "maria.profesor@autoescuela.cl",
         anosExperiencia: 12,
         telefono: "+56987654321",
+        activo: true,
+      },
+      {
+        userId: usuariosCreados[5].id,
+        rut: usuariosCreados[5].rut,
+        especializacion: "Licencias y documentación",
+        correo: "jorgediaz.diaz4@gmail.com",
+        anosExperiencia: 1,
+        telefono: "+56955512345",
         activo: true,
       },
     ];
@@ -294,6 +350,26 @@ export const initializeDatabase = async () => {
         lugarEmision: "Valparaíso",
         activa: true,
       },
+      {
+        instructorId: instructoresCreados[2].id,
+        tipoLicencia: "B",
+        numeroLicencia: "LIC005",
+        categoria: "Automóviles",
+        fechaEmision: "2024-07-10",
+        fechaVencimiento: "2026-08-05",
+        lugarEmision: "Santiago",
+        activa: true,
+      },
+      {
+        instructorId: instructoresCreados[2].id,
+        tipoLicencia: "A2",
+        numeroLicencia: "LIC006",
+        categoria: "Motocicletas",
+        fechaEmision: "2025-01-20",
+        fechaVencimiento: "2027-01-20",
+        lugarEmision: "Santiago",
+        activa: true,
+      },
     ];
 
     // Insertar todas las licencias con una sola query
@@ -333,8 +409,8 @@ export const initializeDatabase = async () => {
     console.log("  Admin: admin@autoescuela.cl / Admin123!");
     console.log("  Instructor: juan.instructor@autoescuela.cl / Instructor123!");
     console.log("  Profesor: maria.profesor@autoescuela.cl / Profesor123!");
-    console.log("  Secretaria: sofia.secretaria@autoescuela.cl / Secretaria123!");
-  } catch (error) {
+    console.log("  Secretaria: sofia.secretaria@autoescuela.cl / Secretaria123!");    console.log("  Usuario: luis.usuario@autoescuela.cl / Usuario123!");
+    console.log("  Usuario: jorgediaz.diaz4@gmail.com / Jorge2026!");  } catch (error) {
     console.error("Error inicializando base de datos:", error.message);
     throw error;
   }

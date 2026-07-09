@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+import { API_URL } from '../config/app.config.js';
 
 export async function fetchVehicles(token) {
   const response = await fetch(`${API_URL}/vehicles`, {
@@ -13,6 +13,21 @@ export async function fetchVehicles(token) {
 
   const data = await response.json()
   return Array.isArray(data) ? data : (data?.data || [])
+}
+
+export async function fetchFleetSummary(token) {
+  const response = await fetch(`${API_URL}/vehicles/summary`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error('Error al cargar el estado de la flota')
+  }
+
+  const data = await response.json()
+  return data?.data || {}
 }
 
 export async function createVehicle(token, formData) {

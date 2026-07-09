@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+import { API_URL } from '../config/app.config.js';
 
 export async function fetchUsers(token) {
   const response = await fetch(`${API_URL}/users`, {

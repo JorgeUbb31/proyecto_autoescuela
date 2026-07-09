@@ -167,6 +167,8 @@ export function mapLicense(license, userRole = null) {
     activa: license.activa,
     imagenRuta: license.imagenRuta,
     imagen_ruta: license.imagenRuta,
+    reminderSentAt: toDateString(license.reminderSentAt),
+    reminder_sent_at: toDateString(license.reminderSentAt),
     instructor: license.instructor
       ? {
           id: license.instructor.id,

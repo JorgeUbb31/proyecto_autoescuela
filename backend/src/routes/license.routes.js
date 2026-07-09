@@ -4,11 +4,12 @@ import {
   createLicense,
   getLicenses,
   getLicenseById,
+  getLicenseSummary,
   updateLicense,
   deleteLicense,
 } from "../controllers/license.controller.js";
 import { authenticateJwt } from "../middleware/authentication.middleware.js";
-import { isAdmin, isAdminOrInstructor, populateUser } from "../middleware/authorization.middleware.js";
+import { isAdmin, isAdminOrInstructor, isAuthorized, populateUser } from "../middleware/authorization.middleware.js";
 import upload from "../config/uploadConfig.js";
 
 const router = Router();
@@ -24,6 +25,7 @@ router.post(
   createLicense
 );
 
+router.get("/summary", isAuthorized(["administrador", "secretaria"]), getLicenseSummary);
 router.get("/", getLicenses);
 router.get("/:id", getLicenseById);
 

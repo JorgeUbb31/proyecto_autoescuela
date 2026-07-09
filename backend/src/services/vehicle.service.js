@@ -1,6 +1,6 @@
 "use strict";
 import { AppDataSource } from "../config/configDb.js";
-import { mapVehicle, mapVehicles } from "./response.mapper.js";
+import { mapVehicle, mapVehicles } from "../helpers/response.mapper.js";
 import { sendMaintenanceNotification } from "../helpers/email.helper.js";
 
 /**
@@ -148,6 +148,8 @@ export async function updateMaintenance(vehicleId, maintenanceData, userRole) {
     throw new Error("Vehículo no encontrado.");
   }
 
+  const shouldNotifyMaintenance = userRole === "secretaria" || userRole === "administrador";
+
   if (userRole === "secretaria" || userRole === "administrador") {
     const shouldBeInMaintenance = maintenanceData.enMantenimiento === true;
     vehicle.enMantenimiento = shouldBeInMaintenance;
@@ -165,18 +167,55 @@ export async function updateMaintenance(vehicleId, maintenanceData, userRole) {
 
   await vehicleRepository.save(vehicle);
 
-  const assignedInstructor = vehicle.instructores?.[0];
-  if (assignedInstructor?.correo || assignedInstructor?.usuario?.email) {
-    await sendMaintenanceNotification({
-      to: assignedInstructor.correo || assignedInstructor.usuario.email,
-      instructorName: assignedInstructor.usuario?.username || assignedInstructor.correo || 'Instructor',
-      vehicleMatricula: vehicle.matricula,
-      comment: vehicle.comentarioMantenimiento,
-      nivelVencimiento: vehicle.nivelVencina,
-    });
+  if (shouldNotifyMaintenance && maintenanceData.enMantenimiento === true) {
+    const assignedInstructor = vehicle.instructores?.[0];
+    const recipientEmail = assignedInstructor?.correo || assignedInstructor?.usuario?.email;
+
+    if (recipientEmail) {
+      await sendMaintenanceNotification({
+        to: recipientEmail,
+        instructorName: assignedInstructor.usuario?.username || assignedInstructor.correo || 'Instructor',
+        vehicleMatricula: vehicle.matricula,
+        comment: vehicle.comentarioMantenimiento,
+        nivelVencimiento: vehicle.nivelVencina,
+      });
+    }
   }
 
   return mapVehicle(vehicle);
+}
+
+/**
+ * Obtiene el estado de la flota de vehículos
+ */
+export async function getFleetSummary(userRole) {
+  const vehicleRepository = AppDataSource.getRepository('Vehiculo');
+
+  const totalVehicles = await vehicleRepository.count();
+  const availableVehicles = await vehicleRepository.count({
+    where: { disponible: true, enMantenimiento: false },
+  });
+  const maintenanceVehicles = await vehicleRepository.count({
+    where: { enMantenimiento: true },
+  });
+
+  const assignedRaw = await vehicleRepository
+    .createQueryBuilder('vehiculo')
+    .leftJoin('vehiculo.instructores', 'instructor')
+    .select('COUNT(DISTINCT vehiculo.id)', 'count')
+    .where('instructor.id IS NOT NULL')
+    .getRawOne();
+
+  const assignedVehicles = Number(assignedRaw?.count || 0);
+  const unassignedVehicles = totalVehicles - assignedVehicles;
+
+  return {
+    totalVehicles,
+    availableVehicles,
+    maintenanceVehicles,
+    assignedVehicles,
+    unassignedVehicles,
+  };
 }
 
 /**

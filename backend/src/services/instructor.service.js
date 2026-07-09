@@ -1,6 +1,7 @@
 "use strict";
 import { AppDataSource } from "../config/configDb.js";
-import { mapInstructor, mapInstructors } from "./response.mapper.js";
+import { mapInstructor, mapInstructors } from "../helpers/response.mapper.js";
+import { sendInstructorPromotionNotification } from "../helpers/email.helper.js";
 
 /**
  * Crea un nuevo instructor
@@ -75,6 +76,15 @@ export async function createInstructor(instructorData) {
     instructorRecord.telefono = instructorData.telefono || instructorRecord.telefono;
     instructorRecord.activo = instructorData.activo !== false;
     await instructorRepository.save(instructorRecord);
+  }
+
+  if (user.role === "instructor" && user.email) {
+    await sendInstructorPromotionNotification({
+      to: user.email,
+      instructorName: user.username || user.email,
+      specialization: instructorRecord.especializacion || "Práctica de manejo",
+      instructorRut: instructorRecord.rut || instructorData.rut,
+    });
   }
 
   return mapInstructor(instructorRecord);

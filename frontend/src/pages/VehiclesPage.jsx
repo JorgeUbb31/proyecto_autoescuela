@@ -31,6 +31,7 @@ export default function VehiclesPage() {
   const [maintenanceLevel, setMaintenanceLevel] = useState('')
   const [maintenanceDecision, setMaintenanceDecision] = useState(false)
   const [maintenanceSubmitting, setMaintenanceSubmitting] = useState(false)
+  const [vehicleFilter, setVehicleFilter] = useState('all')
 
   useEffect(() => {
     fetchVehicles()
@@ -158,6 +159,14 @@ export default function VehiclesPage() {
     }
   }
 
+  const filteredVehicles = vehicles.filter((vehicle) => {
+    if (vehicleFilter === 'available') return vehicle.disponible
+    if (vehicleFilter === 'maintenance') return vehicle.enMantenimiento
+    if (vehicleFilter === 'assigned') return Array.isArray(vehicle.instructores) && vehicle.instructores.length > 0
+    if (vehicleFilter === 'unassigned') return !Array.isArray(vehicle.instructores) || vehicle.instructores.length === 0
+    return true
+  })
+
   const columns = [
     { key: 'id', label: 'ID' },
     { key: 'matricula', label: 'Matrícula' },
@@ -244,18 +253,35 @@ export default function VehiclesPage() {
           )}
 
           <div className="bg-white rounded-lg shadow-lg p-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Vehículos</h2>
-              {usuario?.role === 'administrador' && (
-                <button onClick={() => setIsModalOpen(true)} className="btn-primary">
-                  Nuevo Vehículo
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Vehículos</h2>
+                <p className="text-gray-600 text-sm">Filtra por estado para ver el inventario relevante.</p>
+              </div>
+              <div className="flex flex-wrap gap-3 items-center">
+                <select
+                  value={vehicleFilter}
+                  onChange={(e) => setVehicleFilter(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-800"
+                >
+                  <option value="all">Ver todos</option>
+                  <option value="available">Disponibles</option>
+                  <option value="maintenance">En mantenimiento</option>
+                  <option value="assigned">Asignados</option>
+                  <option value="unassigned">Sin asignar</option>
+                </select>
+                <button
+                  onClick={() => setVehicleFilter('all')}
+                  className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  Limpiar filtros
                 </button>
-              )}
+              </div>
             </div>
 
             <Table
               columns={columns}
-              data={vehicles}
+              data={filteredVehicles}
               loading={loading}
               onEdit={usuario?.role === 'administrador' ? handleEdit : null}
               onDelete={usuario?.role === 'administrador' ? handleDelete : null}
